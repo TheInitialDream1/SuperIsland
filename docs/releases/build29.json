@@ -1,0 +1,17 @@
+{
+  "version": "1.0.10",
+  "build": 29,
+  "extensionVersion": "0.11.0",
+  "filesVerified": 104,
+  "signatureVerified": true,
+  "matchesCanonicalApp": true,
+  "architecture": "arm64",
+  "minimumMacOS": "14.0",
+  "dmgBytes": 39859716,
+  "sha256": "5a3b9ba1c2e16142cbdaa017eebcf34772aaf0ed344ef579e5a8d711bada976d",
+  "releaseTag": "v1.0.10-custom.29",
+  "downloadURL": "https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg",
+  "signing": "ad-hoc",
+  "notarized": false,
+  "bundledExtensions": 10
+}

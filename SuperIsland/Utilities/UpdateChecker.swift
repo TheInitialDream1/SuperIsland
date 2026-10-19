@@ -4,7 +4,7 @@ import Foundation
 final class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 
-    private static let apiURL = URL(string: "https://api.github.com/repos/shobhit99/superisland/releases/latest")!
+    private static let apiURL = URL(string: "https://api.github.com/repos/TheInitialDream1/SuperIsland/releases/latest")!
     private static let lastCheckedKey = "updateChecker.lastCheckedAt"
     private static let dailyInterval: TimeInterval = 86400
 
@@ -77,7 +77,9 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func isNewer(_ candidate: String, than current: String) -> Bool {
-        let a = candidate.split(separator: ".").compactMap { Int($0) }
+        // Custom release tags append a channel/build suffix to the app version.
+        let version = candidate.split(separator: "-", maxSplits: 1).first ?? Substring(candidate)
+        let a = version.split(separator: ".").compactMap { Int($0) }
         let b = current.split(separator: ".").compactMap { Int($0) }
         for i in 0..<max(a.count, b.count) {
             let av = i < a.count ? a[i] : 0

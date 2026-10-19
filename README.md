@@ -10,6 +10,7 @@
   <a href="https://theinitialdream1.github.io/SuperIsland/">产品官网</a> ·
   <a href="#播放器样式">播放器样式</a> ·
   <a href="#组件截图">组件截图</a> ·
+  <a href="#下载安装">下载安装</a> ·
   <a href="#从源码运行">从源码运行</a> ·
   <a href="docs/GALLERY.md">完整截图图鉴</a> ·
   <a href="LICENSE.md">许可与致谢</a>
@@ -33,6 +34,18 @@ SuperIsland 是一个 macOS 菜单栏应用：在刘海附近或普通显示器�
 - **专辑色与真实频谱**：提取封面配色；可选捕获播放器音频做 FFT。暂停、静音或无采样时归零，频谱需要单独启用和授权。
 - **日常效率组件**：主页、音量、电池、日历、天气、连接状态、通知、文件暂存和提词器。
 - **JavaScript 扩展**：通过 JavaScriptCore 运行；支持扩展权限、配置、通知、原生媒体视图，以及静态／运行时窗口高度。
+
+## 下载安装
+
+**[下载 SuperIsland 1.0.10 · Build 29 · Apple Silicon DMG](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg)**
+
+- 适用于 **Apple 芯片 Mac，macOS 14 或更新版本**，安装包约 38 MB。
+- 打开 DMG，将 `SuperIsland.app` 拖入 `Applications`。更新安装前请退出旧版本。
+- 当前为 **ad-hoc 本机签名的开发构建，尚未经过 Apple 公证**，首次运行可能被 macOS 拦截。请确认下载自本仓库；系统提示相关说明见 [Apple 支持](https://support.apple.com/zh-cn/102445)。
+- 安装包包含 15 种原生歌词场景、同步歌词扩展 0.11.0、MediaRemote Adapter、Node 运行时及 10 个扩展。外部服务仍需自行配置账号或本机桥接。
+- 应用更新检查指向本仓库的 Releases；当前不提供 Intel 安装包。
+
+[版本说明、安装包与 SHA-256 校验文件](https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.29) · [完整打包校验记录](docs/releases/build29.json)
 
 ## 播放器样式
 

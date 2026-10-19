@@ -38,3 +38,19 @@ AGPL-3.0；本仓库没有复制或打包其代码、GPU 渲染器、字体、�
   示例歌词为本次文档编写的演示文字；通知、城市、日程和设备名均为示例。
 - 外部服务扩展图为初始／未连接界面，没有使用真实账号、消息、订单、Cookie 或 Token。
 - 截图不打包音频文件，也不构成对第三方音乐内容或品牌的授权。
+
+## 产品官网视觉来源
+
+根据本次页面复刻要求，官网首页场景、悬灯造型与鼠标跟随参数参考并改编自
+[ChatNotch](https://chatnotch.com/)（2026-10-19 访问）。`docs/hero-scene.css`
+保留了对应场景的 CSS 结构。以下静态素材从该站实际加载的资源复制为本地文件：
+
+- `reference-mascot.webp`：紫色角色；原路径 `chatnotch/home-hero-mascot.webp`。
+- `desktop-wallpaper.jpg`：桌面展示壁纸；原路径 `chatnotch/golden-gate.jpg`。
+- `macbook-frame.png`：MacBook 展示框；原路径 `macmockup.png`。
+- `dock-{finder,safari,messages,mail}.png`：Dock 应用图标；原路径 `chatnotch/screen-studio/`。
+
+上述原路径均位于 `https://chatnotch.com/chatnotch-support/website/` 下。
+这些第三方视觉资源及场景样式不属于本分支原创 MIT 授权范围，权利归原权利人，
+本仓库不声称获得其统一开源授权。SuperIsland 应用标志继承自上游。产品功能文案、
+播放器及组件截图使用本项目内容，没有采用参考站的软件包、歌曲音频、账号、评价或联系信息。

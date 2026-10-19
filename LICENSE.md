@@ -17,6 +17,8 @@ license to the complete upstream application.
 - Screenshots containing music metadata are interface demonstrations. The code
   license does not grant rights in third-party songs, lyrics, brands or artwork.
 
+- Website reference scene and visual assets: see the [website provenance](docs/ATTRIBUTION.md#产品官网视觉来源). They are third-party materials outside this MIT grant.
+
 ## MIT License — original contributions by this fork's maintainer only
 
 Copyright (c) 2026 wangxulong / TheInitialDream1
