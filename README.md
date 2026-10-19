@@ -1,5 +1,4 @@
 <p align="center">
-  <a href="https://theinitialdream1.github.io/SuperIsland/">产品官网</a> ·
   <img src="assets/logo.png" width="88" height="88" alt="SuperIsland 图标" />
 </p>
 
@@ -8,6 +7,7 @@
 <p align="center">把 Mac 屏幕顶端变成音乐、信息与效率工具的灵动岛。</p>
 <p align="center">SwiftUI 原生界面 · 15 种歌词播放器样式 · 逐字同步 · 可扩展组件</p>
 <p align="center">
+  <a href="https://theinitialdream1.github.io/SuperIsland/">产品官网</a> ·
   <a href="#播放器样式">播放器样式</a> ·
   <a href="#组件截图">组件截图</a> ·
   <a href="#从源码运行">从源码运行</a> ·
