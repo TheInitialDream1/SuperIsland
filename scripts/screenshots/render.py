@@ -9,6 +9,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import sys
+
+WEBSITE_ONLY = "--website-only" in sys.argv
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -48,6 +51,8 @@ with tempfile.TemporaryDirectory(prefix="superisland-gallery-") as temporary:
                                         "static let shared = NowPlayingManager(observesSystemMedia: false)")
             elif path.name == "AppState.swift":
                 source = replace_body(source, "func refreshEnergyState() {", "")
+                source = source.replace("@Published private(set) var presentationHasNotch", "@Published var presentationHasNotch")
+                source = source.replace("@Published private(set) var presentationNotchRect", "@Published var presentationNotchRect")
             elif path.name == "ShelfStore.swift":
                 source = source.replace("@Published private(set) var items:", "@Published var items:")
             destination = temporary / folder / path.relative_to(ROOT / folder)
@@ -73,9 +78,10 @@ with tempfile.TemporaryDirectory(prefix="superisland-gallery-") as temporary:
                     "SUPERISLAND_CUSTOM_HEIGHT", "-module-name", "SuperIslandGallery",
                     *sources, str(ROOT / "scripts/screenshots/Main.swift"),
                     "-o", str(executable)], check=True, cwd=ROOT)
-    subprocess.run([str(executable), str(ROOT / "docs/screenshots")], check=True,
+    subprocess.run([str(executable), str(ROOT / "docs/screenshots"), *(["--website-only"] if WEBSITE_ONLY else [])], check=True,
                    cwd=temporary)
     # lockFocus uses Retina pixels; the contact sheet does not need a 2880px export.
-    subprocess.run(["sips", "--resampleWidth", "1440",
+    if not WEBSITE_ONLY:
+        subprocess.run(["sips", "--resampleWidth", "1440",
                     str(ROOT / "docs/screenshots/player-styles.png")], check=True,
                    stdout=subprocess.DEVNULL)

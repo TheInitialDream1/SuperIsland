@@ -28,9 +28,63 @@ func capture<V: View>(_ view: V, name: String, width: CGFloat = 720,
     print("Rendered \(name)")
 }
 
+// Website previews preserve the production notch surface, including both shoulders.
+@MainActor
+func websiteWindow<V: View>(_ view: V, name: String, lyrics: Bool = false,
+                            style: NativeLyricStyle = .luminous,
+                            palette: ArtworkPalette? = nil, in folder: URL) throws {
+    let state = AppState.shared
+    let width = Constants.fullExpandedSize.width
+    let contentHeight: CGFloat = lyrics ? 240 : Constants.fullExpandedSize.height
+    let shoulderHeight = state.currentContentTopInset
+    let height = contentHeight + shoulderHeight
+    let radius = state.currentTopLeadingCornerRadius
+    let sideInsets = EdgeInsets(top: 0, leading: radius, bottom: 0, trailing: radius)
+    let root = VStack(spacing: 0) {
+        if lyrics {
+            Color.clear.frame(height: shoulderHeight)
+        } else {
+            FullExpandedTopBarView(layout: .shoulder).frame(height: shoulderHeight)
+        }
+        view
+            .environment(\.lyricsUsesIslandBackground, lyrics)
+            .environment(\.lyricsSurfaceSideInsets, sideInsets)
+            .padding(.horizontal, lyrics ? 0 : state.contentHorizontalPadding)
+            .padding(.top, lyrics ? 0 : state.contentTopPadding)
+            .padding(.bottom, lyrics ? 0 : state.contentBottomPadding)
+            .frame(width: width, height: contentHeight, alignment: .top)
+            .clipped()
+    }
+    .frame(width: width, height: height)
+    .background {
+        if lyrics, let palette {
+            NativeLyricsBackdrop(style: style, palette: palette, position: 18.2, energy: 0)
+        } else {
+            Color.black
+        }
+    }
+    .clipShape(state.currentIslandShape)
+    .environmentObject(state)
+    .environment(\.colorScheme, .dark)
+    let host = NSHostingView(rootView: root)
+    host.appearance = NSAppearance(named: .darkAqua)
+    host.frame = NSRect(x: 0, y: 0, width: width, height: height)
+    host.layoutSubtreeIfNeeded()
+    let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+    host.cacheDisplay(in: host.bounds, to: bitmap)
+    try bitmap.representation(using: .png, properties: [:])!
+        .write(to: folder.appendingPathComponent(name + ".png"))
+    print("Rendered complete notch window \(name): \(width) × \(height)")
+}
+
 @MainActor
 func panel<V: View>(_ view: V, name: String, module: ModuleType? = nil, in folder: URL) throws {
     if let module { AppState.shared.activeModule = .builtIn(module) }
+    if CommandLine.arguments.contains("--website-only") {
+        AppState.shared.fullExpandedSelectedTab = module.map { .module(.builtIn($0)) } ?? .home
+        try websiteWindow(view, name: name, in: folder.appendingPathComponent("windows"))
+        return
+    }
     try capture(view.padding(.horizontal, 28).padding(.vertical, 22), name: name, in: folder)
 }
 
@@ -44,6 +98,11 @@ struct Gallery {
         UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
         let state = AppState.shared
         state.currentState = .fullExpanded
+        state.presentationHasNotch = true
+        state.presentationNotchRect = NSRect(x: 666, y: 0, width: 180, height: 32)
+        let websiteOnly = CommandLine.arguments.contains("--website-only")
+        let websiteFolder = folder.appendingPathComponent("windows", isDirectory: true)
+        try FileManager.default.createDirectory(at: websiteFolder, withIntermediateDirectories: true)
 
         let cover = NSImage(size: NSSize(width: 300, height: 300))
         cover.lockFocus()
@@ -97,8 +156,13 @@ struct Gallery {
                             .padding(.horizontal, compact ? 22 : 32).padding(.vertical, compact ? 12 : 16)
                     }
                 }.background(NativeLyricsBackdrop(style: style, palette: palette, position: 18.2, energy: 0))
-                try capture(view, name: "player-\(style.rawValue)\(compact ? "-compact" : "")",
-                            width: width, height: height, in: folder)
+                if !compact {
+                    let fullView = NowPlayingLyricsView(content: content, player: player, spectrum: spectrum)
+                    try websiteWindow(fullView, name: "player-\(style.rawValue)", lyrics: true,
+                                      style: style, palette: palette, in: websiteFolder)
+                }
+                if !websiteOnly { try capture(view, name: "player-\(style.rawValue)\(compact ? "-compact" : "")",
+                            width: width, height: height, in: folder) }
             }
         }
 
@@ -158,6 +222,7 @@ struct Gallery {
         try panel(ShelfFullExpandedView(), name: "shelf", module: .shelf, in: folder)
         try panel(TeleprompterExpandedView(), name: "teleprompter", module: .teleprompter, in: folder)
         try panel(SystemHUDExpandedView(), name: "volume", module: .volumeHUD, in: folder)
+        if websiteOnly { return }
         try capture(FocusCompactView().padding(20), name: "focus", width: 240, height: 72, in: folder)
         try capture(SettingsView(), name: "settings", width: 960, height: 680, in: folder)
         let fixtures = Bundle.main.url(forResource: "extension-previews", withExtension: "json")!

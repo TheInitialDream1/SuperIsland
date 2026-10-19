@@ -1,98 +1,490 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#090e0e">
-  <meta name="description" content="SuperIsland 中文增强版，把 Mac 顶部变成音乐与效率的小岛。探索 15 种原生歌词播放器样式、逐字同步、日历、天气、文件暂存、提词器及扩展组件。">
-  <title>SuperIsland · 给你的 Mac，一座灵感小岛</title>
-  <link rel="canonical" href="https://theinitialdream1.github.io/SuperIsland/">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="SuperIsland · 给你的 Mac，一座灵感小岛">
-  <meta property="og:description" content="15 种歌词场景，更多日常可能。为 macOS 打造的原生灵动岛中文增强版。">
-  <meta property="og:image" content="https://theinitialdream1.github.io/SuperIsland/site-assets/player-styles-overview.webp">
-  <link rel="icon" href="site-assets/logo.webp" type="image/webp">
-  <link rel="stylesheet" href="site.css">
-  <script src="site.js" defer></script>
-</head>
-<body>
-<svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
-  <symbol id="i-external" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12"/></symbol>
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
-  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 8l12-2"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="16" rx="3" ry="3"/></symbol>
-  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
-  <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/></symbol>
-  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
-  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
-  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 10v4m4-8v12m5-16v20m5-16v12m4-8v4"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4 1-4-2-6-2m12 5v-3.5c0-1 .1-1.6-.5-2.2 3.3-.4 6.5-1.5 6.5-7A5.4 5.4 0 0 0 19.5 5 5 5 0 0 0 19.4 1S18.2.6 15 2.5a13.7 13.7 0 0 0-6 0C5.8.6 4.6 1 4.6 1a5 5 0 0 0-.1 4A5.4 5.4 0 0 0 3 9.3c0 5.5 3.2 6.6 6.5 7-.6.6-.6 1.4-.5 2.2V22"/></symbol>
-</svg>
-<a class="skip-link" href="#main">跳到主要内容</a>
-<header class="site-header">
-  <a class="brand" href="#" aria-label="SuperIsland 首页"><img src="site-assets/logo.webp" alt="" width="34" height="34"><span>SuperIsland<span class="brand-dot">.</span></span></a>
-  <nav aria-label="主要导航"><a href="#players">播放器</a><a href="#modules">功能组件</a><a href="#extensions">扩展</a></nav>
-  <a class="button small secondary" href="https://github.com/TheInitialDream1/SuperIsland"><svg aria-hidden="true" focusable="false"><use href="#i-github"/></svg><span>查看源码</span></a>
-</header>
-<main id="main">
-  <section class="hero section-wrap">
-    <div class="hero-copy">
-      <p class="eyebrow"><span class="status-dot"></span>为 macOS 打造的原生灵动岛</p>
-      <h1>给你的 Mac，<br>一座<span class="mint-text">灵感小岛。</span></h1>
-      <p class="hero-description">音乐在眼前，灵感在身边。<br>让歌词、日程和常用工具，在屏幕顶端轻轻相遇。</p>
-      <div class="hero-actions"><a class="button primary" href="#start">获取 SuperIsland <svg aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></a><a class="text-link" href="#players">探索 15 种歌词场景 <span>↓</span></a></div>
-      <p class="compatibility">macOS 14+ <span>·</span> Apple Silicon <span>·</span> 中文增强版</p>
-    </div>
-    <div class="hero-product">
-      <div class="mac-window">
-        <div class="mac-menubar" aria-hidden="true"><span>● &nbsp; 访达　文件　编辑　显示</span><span>Wi-Fi &nbsp; 100% &nbsp; 16:29</span></div>
-        <div class="notch" aria-hidden="true"><span></span></div>
-        <div class="desktop-wallpaper" aria-hidden="true"><i></i><i></i><span>留一点空间，<br>给喜欢的事。</span></div>
-        <div class="hero-island"><img id="hero-preview" src="site-assets/player-luminous.webp" width="1440" height="480" alt="SuperIsland 流光歌词播放器预览" fetchpriority="high"></div>
-        <div class="desktop-dock" aria-hidden="true"><span><svg aria-hidden="true"><use href="#i-external"/></svg></span><span><svg aria-hidden="true"><use href="#i-grid"/></svg></span><img src="site-assets/logo.webp" alt="" width="32" height="32"><span><svg aria-hidden="true"><use href="#i-music"/></svg></span><span><svg aria-hidden="true"><use href="#i-code"/></svg></span></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>SuperIsland · Mac 顶部的灵动工作台</title>
+    <meta
+      name="description"
+      content="SuperIsland 中文增强版：15 种原生歌词播放器，QQ 音乐逐字同步、日程、天气、暂存架与 JavaScript 扩展。免费下载 Apple Silicon macOS 安装包。"
+    />
+    <link rel="icon" href="site-assets/logo.webp" />
+    <link rel="stylesheet" href="hero-scene.css" />
+    <link rel="stylesheet" href="site.css" />
+    <script src="site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到正文</a>
+    <header class="brand-header">
+      <a class="wordmark" href="#home"
+        ><img
+          src="site-assets/logo.webp"
+          width="48"
+          height="48"
+          alt=""
+        />SuperIsland</a
+      ><span class="version">1.0.10 · 29</span>
+    </header>
+    <nav class="floating-nav" aria-label="主要导航">
+      <a class="nav-icon" href="#home" aria-label="SuperIsland 首页"
+        ><img src="site-assets/logo.webp" alt="" width="27" height="27" /></a
+      ><span class="nav-divider"></span
+      ><a class="nav-section" href="#features">功能</a
+      ><a class="nav-section" href="#showcase">展示</a
+      ><a
+        class="nav-github"
+        href="https://github.com/TheInitialDream1/SuperIsland"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="在 GitHub 查看 SuperIsland 项目"
+        >GitHub ↗</a
+      ><a
+        class="blue-button nav-download"
+        href="https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg"
+        >↓&nbsp; 下载</a
+      >
+    </nav>
+    <main id="main">
+      <section class="cn-home-hero" id="home" aria-label="SuperIsland 首页介绍">
+        <div class="cn-home-noise" aria-hidden="true"></div>
+        <div
+          class="cn-home-ambient cn-home-ambient-left"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="cn-home-ambient cn-home-ambient-right"
+          aria-hidden="true"
+        ></div>
+        <div class="cn-home-pointer-light" aria-hidden="true"></div>
+        <div class="cn-home-lamp-stage" aria-hidden="true">
+          <div class="cn-home-lamp-rig">
+            <div class="cn-home-lamp-cable"></div>
+            <div class="cn-home-lamp-cap"><i></i><i></i></div>
+            <div class="cn-home-lamp-shade">
+              <div class="cn-home-lamp-rim"></div>
+              <div class="cn-home-lamp-bulb"></div>
+            </div>
+          </div>
+        </div>
+        <div class="cn-home-layout">
+          <div class="cn-home-copy">
+            <h1>SuperIsland</h1>
+            <h2><strong>小小刘海，</strong><span>无限可能。</span></h2>
+            <p class="cn-home-description">
+              音乐、逐字歌词、日程、天气、暂存架与提词器，<br />让常用工具，住进
+              Mac 的顶部。
+            </p>
+            <div class="cn-home-actions">
+              <a
+                class="cn-home-button cn-home-button-primary"
+                href="https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg"
+                >下载 macOS 版 <span aria-hidden="true">↓</span></a
+              ><a class="cn-home-button cn-home-button-ghost" href="#demo"
+                >观看产品演示 <span aria-hidden="true">↗</span></a
+              >
+            </div>
+            <div class="cn-home-status-row">
+              <span><i class="cn-home-status-green"></i>macOS 14+</span><b></b
+              ><span><i class="cn-home-status-blue"></i>Apple Silicon</span
+              ><b></b
+              ><span><i class="cn-home-status-violet"></i>免费 · 源码公开</span>
+            </div>
+          </div>
+          <div class="cn-home-product" aria-label="随鼠标互动的动态角色">
+            <div class="cn-home-product-aura" aria-hidden="true"></div>
+            <div class="cn-home-mascot" aria-hidden="true">
+              <img
+                src="site-assets/reference-mascot.webp"
+                width="1075"
+                height="946"
+                alt=""
+                fetchpriority="high"
+              /><span class="cn-home-mascot-eye cn-home-mascot-eye-left"></span
+              ><span class="cn-home-mascot-eye cn-home-mascot-eye-right"></span
+              ><span class="cn-home-mascot-wink"><i></i><i></i></span
+              ><span class="cn-home-mascot-spark"><i></i><i></i><i></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="cn-home-mouse-hint" aria-hidden="true">
+          <span></span>移动鼠标，让灯和小岛跟上你
+        </p>
+      </section>
+      <section id="demo" class="demo-section">
+        <h2 class="demo-eyebrow">专为 macOS 打造的 SUPERISLAND</h2>
+        <div class="desktop-demo">
+          <div class="desktop-menubar">
+            <span>访达 &nbsp; 文件 &nbsp; 编辑 &nbsp; 显示</span
+            ><span>SuperIsland · 中文增强版</span>
+          </div>
+          <div class="demo-panel">
+            <img
+              id="demo-preview"
+              src="site-assets/home.webp"
+              width="1316"
+              height="434"
+              alt="SuperIsland 主页真实组件预览"
+            />
+          </div>
+          <span class="camera-cutout" aria-hidden="true"></span>
+          <div class="desktop-caption">音乐、日程和天气，在同一处相遇。</div>
+          <div class="demo-dock" aria-hidden="true">
+            <img src="site-assets/dock-finder.png" alt="" /><img
+              src="site-assets/dock-safari.png"
+              alt=""
+            /><img src="site-assets/logo.webp" alt="" /><img
+              src="site-assets/dock-messages.png"
+              alt=""
+            /><img src="site-assets/dock-mail.png" alt="" />
+          </div>
+        </div>
+
+        <div class="demo-tabs" role="group" aria-label="切换产品演示">
+          <button data-demo="home" aria-pressed="true">主页</button
+          ><button data-demo="shelf" aria-pressed="false">暂存架</button
+          ><button data-demo="calendar" aria-pressed="false">日历</button
+          ><button data-demo="weather" aria-pressed="false">天气</button
+          ><button data-demo="player-luminous" aria-pressed="false">
+            歌词
+          </button>
+        </div>
+        <p class="image-note">点击标签切换完整原生窗口 · 演示数据</p>
+      </section>
+      <section id="features" class="section wrap">
+        <div class="section-heading">
+          <p class="eyebrow">把日常工具，放到视线最近的地方。</p>
+          <h2>Mac 顶部，还能做更多。</h2>
+          <p>SwiftUI 原生构建，让音乐与工作自然相伴。</p>
+        </div>
+        <div class="bento-grid">
+          <article class="bento main-bento">
+            <img
+              class="bento-preview"
+              src="site-assets/home.webp"
+              alt="主页整合音乐、日历与天气"
+              loading="lazy"
+            />
+            <div class="center-brand">
+              <img
+                src="site-assets/logo.webp"
+                alt=""
+                width="104"
+                height="104"
+              /><strong>SuperIsland</strong>
+            </div>
+            <div class="bento-copy">
+              <span class="feature-number">01</span>
+              <h3>顶部常驻</h3>
+              <p>
+                紧凑、展开、完整展开。让信息在需要时出现，在专注时安静收起。
+              </p>
+            </div>
+          </article>
+          <article class="bento system-bento">
+            <img
+              class="bento-preview"
+              src="site-assets/battery.webp"
+              alt="电池状态"
+              loading="lazy"
+            />
+            <div class="bento-copy">
+              <span class="feature-number">02</span>
+              <h3>系统状态，一眼掌握</h3>
+              <p>电量、音量、网络与蓝牙设备，各有自己的位置。</p>
+            </div>
+          </article>
+          <article class="bento small-bento">
+            <div class="bento-copy">
+              <span class="feature-number">15</span>
+              <h3>十五种歌词场景</h3>
+              <p>流光、心象、时计、莫奈……整窗原生构图，自由切换。</p>
+            </div>
+          </article>
+          <article class="bento small-bento">
+            <div class="bento-copy">
+              <span class="feature-number">QRC</span>
+              <h3>真实逐字同步</h3>
+              <p>QQ 音乐 QRC 优先，逐行 LRC 回退，支持歌曲偏移校准。</p>
+            </div>
+          </article>
+          <article class="bento bottom-bento">
+            <img
+              class="bento-preview"
+              src="site-assets/teleprompter.webp"
+              alt="提词器组件"
+              loading="lazy"
+            />
+            <div class="bento-copy">
+              <span class="feature-number">05</span>
+              <h3>表达，自有节奏</h3>
+              <p>稿件、字号、滚动速度与语音跟读，让台词留在视线前方。</p>
+            </div>
+          </article>
+          <article class="bento bottom-bento">
+            <img
+              class="bento-preview"
+              src="site-assets/player-sonnet.webp"
+              alt="商籁歌词场景"
+              loading="lazy"
+            />
+            <div class="bento-copy">
+              <span class="feature-number">06</span>
+              <h3>音乐，不止播放</h3>
+              <p>专辑配色、播放进度、点击歌词跳转，还可开启真实音频频谱。</p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="workflow section wrap" id="modules">
+        <div class="section-heading"><h2>让工具，跟上你的工作方式。</h2></div>
+        <div
+          id="module-options"
+          class="tabs"
+          role="group"
+          aria-label="选择功能组件"
+        ></div>
+        <article class="workflow-panel">
+          <div class="workflow-copy">
+            <h3 id="module-name">一眼看全的主页</h3>
+            <p id="module-description">
+              把正在播放、日历与天气放在一起，首页槽位可以自由调整。
+            </p>
+          </div>
+          <div class="workflow-screen">
+            <img
+              id="module-preview"
+              src="site-assets/home.webp"
+              width="1000"
+              height="460"
+              loading="lazy"
+              alt="主页组件"
+            />
+          </div>
+        </article>
+      </section>
+      <section class="lyrics-feature section">
+        <div class="lyrics-visual">
+          <div class="macbook">
+            <img
+              class="macbook-frame"
+              src="site-assets/macbook-frame.png"
+              alt="MacBook 展示模型"
+              loading="lazy"
+            />
+            <div class="macbook-screen">
+              <img
+                src="site-assets/player-luminous.webp"
+                alt="流光歌词播放器"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="lyrics-copy">
+          <p class="eyebrow cyan">中文增强 · 同步歌词</p>
+          <h2>每一句，都有自己的舞台。</h2>
+          <h3>真实逐字时间，<br />十五种原生场景。</h3>
+          <p>
+            歌词、播放控制与进度共用原生时钟。<br />从安静的三行歌词，到完整的动态舞台，让每一首歌都有喜欢的模样。
+          </p>
+          <a class="text-link" href="#showcase">探索全部播放器样式 ↗</a>
+        </div>
+      </section>
+      <section id="showcase" class="section showcase">
+        <div class="section-heading">
+          <p class="eyebrow">十五种样式 · 同一份热爱</p>
+          <h2>把音乐，放进喜欢的风景。</h2>
+          <p>左右滑动，连同整台 Mac 一起切换歌词场景。</p>
+        </div>
+        <div
+          class="carousel-shell"
+          role="region"
+          aria-roledescription="轮播"
+          aria-label="歌词播放器样式"
+        >
+          <div class="carousel-track" id="style-track"></div>
+          <button
+            id="previous-style"
+            class="carousel-arrow previous"
+            aria-label="上一个播放器样式"
+          >
+            ‹
+          </button>
+          <button
+            id="next-style"
+            class="carousel-arrow next"
+            aria-label="下一个播放器样式"
+          >
+            ›
+          </button>
+          <p id="style-announcement" class="sr-only" aria-live="polite"></p>
+        </div>
+        <div
+          id="style-options"
+          class="tabs style-tabs"
+          role="group"
+          aria-label="选择播放器样式"
+        ></div>
+        <button class="text-link overview-button" id="open-player">
+          放大当前播放器 ↗
+        </button>
+        <button class="text-link overview-button" id="open-overview">
+          查看 15 种效果总览 ↗
+        </button>
+      </section>
+      <section id="extensions" class="section wrap">
+        <div class="section-heading">
+          <p class="eyebrow">更多可能，由你拓展</p>
+          <h2>让小岛，长出你的工作方式。</h2>
+          <p>JavaScript 扩展，从专注计时到订单物流。</p>
+        </div>
+        <div id="extension-list" class="extension-grid"></div>
+        <p class="image-note">
+          外部服务需配置自己的账号或本机桥接；订单功能依赖网页登录态与页面兼容性。
+        </p>
+      </section>
+      <section class="download-section section wrap" id="download">
+        <div class="section-heading">
+          <h2>为你的 Mac，添一座小岛。</h2>
+          <p>中文界面，原生交互，现已可以直接下载。</p>
+        </div>
+        <div class="download-dock" aria-hidden="true">
+          <img src="site-assets/dock-finder.png" alt="" /><img
+            src="site-assets/dock-safari.png"
+            alt=""
+          /><img class="dock-main" src="site-assets/logo.webp" alt="" /><img
+            src="site-assets/dock-messages.png"
+            alt=""
+          /><img src="site-assets/dock-mail.png" alt="" />
+        </div>
+        <a
+          class="blue-button main-download"
+          href="https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg"
+          >下载 macOS 版 ↓</a
+        >
+        <p class="download-meta">
+          1.0.10 · Build 29 · 38 MB · Apple Silicon · macOS 14+
+        </p>
+        <p class="signing-note">本机签名的开发构建，尚未经过 Apple 公证。</p>
+        <div class="download-resources">
+          <a
+            href="https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.29"
+            >版本说明与 SHA-256</a
+          ><a href="https://github.com/TheInitialDream1/SuperIsland#从源码运行"
+            >从源码构建 ↗</a
+          >
+        </div>
+      </section>
+      <section class="faq wrap" id="faq">
+        <h2>下载之前，你可能想知道。</h2>
+        <details>
+          <summary>适用于哪些 Mac？</summary>
+          <p>
+            当前安装包适用于 Apple 芯片 Mac，需要 macOS 14 或更新版本。暂未提供
+            Intel 安装包。
+          </p>
+        </details>
+        <details>
+          <summary>如何安装？</summary>
+          <p>
+            打开下载的 DMG，将 SuperIsland.app 拖入
+            Applications，再从应用程序中启动。此开发构建为本机签名，未做 Apple
+            公证；首次运行可能被系统拦截，可查看
+            <a href="https://github.com/TheInitialDream1/SuperIsland#下载安装"
+              >README 的安装说明</a
+            >。
+          </p>
+        </details>
+        <details>
+          <summary>音乐与歌词支持哪些播放器？</summary>
+          <p>
+            使用系统媒体信息，Apple Music、Spotify 提供应用级回退，QQ 音乐通过
+            MediaRemote Adapter 识别和控制。歌词优先匹配 QRC，缺失时回退
+            LRC，结果取决于录音版本、网络与服务可用性。
+          </p>
+        </details>
+        <details>
+          <summary>会请求哪些权限？</summary>
+          <p>
+            由启用的功能决定：日历、定位、通知、自动化等。真实音频频谱与提词器语音跟读需要额外授权，外部服务扩展需要自行配置。
+          </p>
+        </details>
+      </section>
+    </main>
+    <footer>
+      <div class="footer-watermark" aria-hidden="true">SuperIsland</div>
+      <div class="footer-grid wrap">
+        <div class="footer-brand">
+          <img src="site-assets/logo.webp" alt="" width="58" height="58" />
+          <div>
+            <strong>SuperIsland</strong>
+            <p>音乐与工具，在 Mac 顶部相遇。<br />中文增强版。</p>
+          </div>
+        </div>
+        <div>
+          <strong>产品</strong
+          ><a
+            href="https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg"
+            >下载安装包</a
+          ><a href="#showcase">播放器样式</a><a href="#modules">功能组件</a>
+        </div>
+        <div>
+          <strong>资源</strong
+          ><a href="https://github.com/TheInitialDream1/SuperIsland"
+            >GitHub 源码</a
+          ><a
+            href="https://github.com/TheInitialDream1/SuperIsland/blob/custom/docs/GALLERY.md"
+            >截图图鉴</a
+          ><a href="https://github.com/TheInitialDream1/SuperIsland/releases"
+            >更新日志</a
+          >
+        </div>
+        <div>
+          <strong>项目</strong
+          ><a href="https://github.com/TheInitialDream1/SuperIsland/issues"
+            >反馈建议</a
+          ><a href="#faq">常见问题</a
+          ><a
+            href="https://github.com/TheInitialDream1/SuperIsland/blob/custom/docs/ATTRIBUTION.md"
+            >来源与许可</a
+          >
+        </div>
       </div>
-      <div class="preview-controls" aria-label="切换顶部界面预览"><span class="preview-label">试着切换</span><button data-hero="player-luminous" aria-pressed="true">歌词</button><button data-hero="home" aria-pressed="false">主页</button><button data-hero="shelf" aria-pressed="false">暂存架</button><button data-hero="calendar" aria-pressed="false">日历</button></div>
-      <p class="image-note">真实原生组件 · 网页中的界面使用演示数据</p>
-    </div>
-  </section>
-
-  <div class="facts section-wrap"><div><strong>15<span>种</span></strong><p>歌词播放器样式</p></div><div><strong>09<span>个</span></strong><p>内置功能模块</p></div><div><strong>SwiftUI</strong><p>原生视图与交互</p></div><div><strong>你来定义</strong><p>用 JavaScript 扩展更多可能</p></div></div>
-
-  <section class="players section-wrap" id="players">
-    <div class="section-heading"><p class="eyebrow">YOUR MUSIC, YOUR SCENE</p><h2>同一首歌，<br class="mobile-break">十五种心情。</h2><p>从安静的三行歌词，到有呼吸感的整窗场景。<br>挑一个喜欢的样子，让音乐占据这一小片天地。</p></div>
-    <div class="player-showroom">
-      <div class="showroom-top"><span><span class="status-dot"></span> 原生歌词场景</span><span id="style-counter">02 / 15</span></div>
-      <div class="player-stage"><img id="style-preview" src="site-assets/player-luminous.webp" width="1440" height="480" alt="流光样式：居中逐字歌词与底部胶囊播放器" loading="lazy"></div>
-      <div class="style-caption" aria-live="polite" aria-atomic="true"><h3 id="style-name">流光</h3><p id="style-description">居中逐字歌词、流动专辑色背景和底部胶囊播放器。</p></div>
-      <div class="style-options" id="style-options" aria-label="选择播放器样式"></div>
-    </div>
-    <div class="section-tail"><span>QQ 音乐 QRC 逐字同步 · LRC 回退 · 逐曲偏移校准</span><button class="text-link" id="open-overview">查看全部效果总览 <svg aria-hidden="true" focusable="false"><use href="#i-external"/></svg></button></div>
-    <div class="music-details"><article><svg aria-hidden="true" focusable="false"><use href="#i-music"/></svg><h3>每一句，都跟得上</h3><p>歌词与播放进度共用原生时钟。QRC 提供真实逐字时间，点击一句歌词，就能跳到那一刻。</p></article><article><svg aria-hidden="true" focusable="false"><use href="#i-wave"/></svg><h3>让声音被看见</h3><p>可选真实音频频谱，通过播放器音频做 FFT 分析。专辑配色随封面变化，暂停时也归于安静。</p></article><article><svg aria-hidden="true" focusable="false"><use href="#i-grid"/></svg><h3>轻轻展开，自然收起</h3><p>紧凑、展开、完整展开三种状态。新增场景的控制胶囊随交互显现，让歌词拥有更多空间。</p></article></div>
-  </section>
-
-  <section class="daily-section" id="modules"><div class="section-wrap">
-    <div class="section-heading left"><p class="eyebrow">A LITTLE SPACE FOR YOUR DAY</p><h2>日常所需，<br>抬眼就到。</h2><p>少切一次窗口，多留一点专注。<br>从下一场会议，到刚刚记下的灵感，都有自己的位置。</p></div>
-    <div class="module-showcase"><div class="module-options" id="module-options" aria-label="选择功能组件"></div><div class="module-visual"><div class="module-caption" aria-live="polite" aria-atomic="true"><span id="module-index">01 / 10</span><h3 id="module-name">一眼看全的主页</h3><p id="module-description">把正在播放、日历与天气放在一起，首页槽位可以自由调整。</p></div><div class="module-screen"><img id="module-preview" src="site-assets/home.webp" width="1440" height="568" alt="主页：音乐、日历和天气三栏预览" loading="lazy"></div><p class="image-note">真实项目组件截图，内容为离线示例。</p></div></div>
-  </div></section>
-
-  <section class="extensions section-wrap" id="extensions"><div class="extension-intro"><p class="eyebrow">MADE TO MAKE IT YOURS</p><h2>小岛的边界，<br>由你拓展。</h2><p>番茄钟、代理任务、音乐记录和订单进度。<br>通过 JavaScriptCore 扩展机制，把自己的工作方式带上岛。</p><a class="text-link" href="https://github.com/TheInitialDream1/SuperIsland/tree/custom/Extensions">探索扩展代码 <svg aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><div class="extension-note">外部服务需要对应账号或本机桥接配置。<br>订单组件依赖网页登录态及页面结构。</div></div><div class="extension-list" id="extension-list"></div></section>
-
-  <section class="get-started section-wrap" id="start"><div class="start-card"><div><p class="eyebrow">YOUR NEXT LITTLE UPGRADE</p><h2>下一座小岛，<br>就在你的 Mac 上。</h2><p>源码已公开。获取中文增强版，<br>从你最喜欢的功能开始。</p><a class="button primary" href="https://github.com/TheInitialDream1/SuperIsland"><svg aria-hidden="true" focusable="false"><use href="#i-github"/></svg>前往 GitHub 获取源码 <svg aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><p class="start-requirements">macOS 14+ · Apple Silicon<br>从源码运行需要完整 Xcode 15+ 与 XcodeGen</p></div><div class="install-panel"><div class="terminal-heading"><span><i></i><i></i><i></i></span><span>从源码开始</span><button id="copy-command" aria-label="复制安装命令"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg></button></div><pre><code id="install-command">brew install xcodegen
-git clone https://github.com/TheInitialDream1/SuperIsland.git
-cd SuperIsland
-xcodegen generate
-open SuperIsland.xcodeproj</code></pre><p>在 Xcode 中选择 SuperIsland scheme，配置自己的签名团队后运行。</p><a class="text-link" href="https://github.com/TheInitialDream1/SuperIsland#从源码运行">完整运行与权限说明 <svg aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></a><span id="copy-feedback" role="status" aria-live="polite"></span></div></div></section>
-
-  <section class="faq section-wrap" id="faq"><div><p class="eyebrow">GOOD TO KNOW</p><h2>上岛之前，<br>你可能想知道。</h2></div><div class="faq-items">
-    <details><summary>我的 Mac 可以运行吗？</summary><p>需要 macOS 14 或更新版本。目前随包媒体适配器为 arm64，中文增强版以 Apple Silicon Mac 为主要目标。带刘海和普通显示器均有布局，支持选择固定显示器。Intel 构建需要重新编译依赖，尚未验证。</p></details>
-    <details><summary>音乐和歌词支持哪些播放器？</summary><p>使用系统媒体信息，针对 Apple Music、Spotify 提供应用级回退，QQ 音乐通过 MediaRemote Adapter 识别和控制。Chrome / Chrome Canary 检测需要主动开启。QQ 音乐优先匹配 QRC 逐字歌词，不可用时回退 LRC；匹配结果取决于歌曲版本、网络和服务接口。</p></details>
-    <details><summary>需要开放哪些权限？</summary><p>按使用功能启用：日历读取日程，天气使用定位，连接状态可能需要蓝牙与定位，部分播放器需要自动化或辅助功能权限。真实频谱需系统音频相关授权；语音跟读提词需要麦克风与语音识别权限。</p></details>
-    <details><summary>数据都保存在本地吗？</summary><p>暂存架、提词稿和扩展运行数据保存在本机。天气、歌词和外部服务功能会按需联网；上游应用还保留 Aptabase 匿名使用统计。频谱采集不写音频文件、不上传音频，也不采集麦克风。具体行为可在源码中核对。</p></details>
-    <details><summary>这里可以直接体验完整应用吗？</summary><p>这是静态产品官网，播放器和模块切换展示的是项目真实界面截图。音频播放、动态歌词和系统交互需要在 Mac 上运行原生应用。目前提供源码与构建说明，安装包以仓库实际发布的版本为准。</p></details>
-  </div></section>
-</main>
-<footer class="site-footer section-wrap"><div><a class="brand" href="#"><img src="site-assets/logo.webp" alt="" width="32" height="32"><span>SuperIsland<span class="brand-dot">.</span></span></a><p>给常用信息一个位置，给专注多一点空间。</p></div><div class="footer-links"><a href="https://github.com/TheInitialDream1/SuperIsland">GitHub</a><a href="https://github.com/TheInitialDream1/SuperIsland/blob/custom/docs/GALLERY.md">截图图鉴</a><a href="https://github.com/TheInitialDream1/SuperIsland/issues">反馈建议</a><a href="https://github.com/TheInitialDream1/SuperIsland/blob/custom/docs/ATTRIBUTION.md">来源与许可</a></div><p class="copyright">© 2026 TheInitialDream1 · SuperIsland 中文增强版<br>基于 SuperIsland 的公开分支，原创贡献与第三方许可按来源区分。</p></footer>
-<dialog id="overview-dialog" aria-labelledby="overview-title"><div class="dialog-header"><h2 id="overview-title">15 种播放器效果总览</h2><button id="close-overview" aria-label="关闭效果总览"><svg aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div><img src="site-assets/player-styles-overview.webp" width="1800" height="1350" alt="原版、流光、心象、云阶、浮名、群唱、倾诉、回环、镜台、时计、商籁、凝彩、绘光、莫奈、静止十五种效果总览" loading="lazy"><p class="image-note">项目效果总览图 · 由用户提供</p></dialog>
-<noscript><p class="noscript-note">交互式样式切换需要启用 JavaScript。你仍可浏览本页介绍，或在 GitHub 查看完整截图图鉴。</p></noscript>
-</body>
+      <div class="footer-bottom wrap">
+        <span>© 2026 TheInitialDream1 · SuperIsland 中文增强版</span
+        ><span>1.0.10 · Build 29</span>
+      </div>
+    </footer>
+    <dialog id="overview-dialog" aria-labelledby="overview-title">
+      <div class="dialog-header">
+        <h2 id="overview-title">15 种播放器样式</h2>
+        <button id="close-overview" autofocus aria-label="关闭总览">×</button>
+      </div>
+      <img
+        src="site-assets/player-styles-overview.webp"
+        width="1600"
+        height="1200"
+        alt="用户提供的15种播放器效果总览"
+      />
+      <p class="image-note">用户提供的效果总览；歌曲内容仅用于界面展示。</p>
+    </dialog>
+    <dialog id="player-dialog" aria-labelledby="player-dialog-title">
+      <div class="dialog-header">
+        <h2 id="player-dialog-title">流光 · 完整原生窗口</h2>
+        <button id="close-player" autofocus aria-label="关闭播放器预览">
+          ×
+        </button>
+      </div>
+      <div class="native-window-detail">
+        <img
+          id="player-detail-image"
+          src="site-assets/player-luminous.webp"
+          width="1316"
+          height="554"
+          alt="流光播放器完整窗口，包含两侧外翻弧角"
+        />
+      </div>
+    </dialog>
+  </body>
 </html>

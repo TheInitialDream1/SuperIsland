@@ -19,6 +19,9 @@ sources = [ROOT / "assets/logo.png", ROOT / "assets/player-styles-overview.png"]
 sources += [ROOT / f"docs/screenshots/player-{name}.png" for name in STYLES]
 sources += [ROOT / f"docs/screenshots/{name}.png" for name in MODULES]
 for source in sources:
+    window_source = ROOT / "docs/screenshots/windows" / source.name
+    if source.parent == ROOT / "docs/screenshots" and window_source.exists():
+        source = window_source
     image = Image.open(source).convert("RGBA")
     image.thumbnail((1800, 1350))
     image.save(OUTPUT / f"{source.stem}.webp", "WEBP", quality=88, method=6)

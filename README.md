@@ -214,7 +214,7 @@ xcodebuild test -project SuperIsland.xcodeproj -scheme SuperIsland \
 
 脚本会清空并重建仓库中的 `build/`，生成 `build/SuperIsland.dmg`，供本地安装测试。没有自己的 Developer ID 签名和公证时，不能将它当成经过 Apple 公证的发布包。签名发布参考 [RELEASE.md](docs/RELEASE.md)，凭据请仅保存在被 Git 忽略的 `.env` 中。
 
-此定制构建启用了 `SUPERISLAND_CUSTOM_HEIGHT`，关闭上游自动更新，避免定制功能被官方版本覆盖；后续更新请从此仓库获取代码并重新构建。当前仓库先提供源码，下载地址以本仓库实际发布的 Releases 为准。
+此定制构建启用了 `SUPERISLAND_CUSTOM_HEIGHT`，禁用启动时自动检查更新；内置更新检查地址已切换到本仓库，避免定制功能被上游版本覆盖。后续版本请从本仓库 Releases 获取安装包，也可自行构建源码。
 
 重新生成示例截图：
 
