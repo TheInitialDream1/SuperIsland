@@ -1,4 +1,5 @@
 <p align="center">
+  <a href="https://theinitialdream1.github.io/SuperIsland/">产品官网</a> ·
   <img src="assets/logo.png" width="88" height="88" alt="SuperIsland 图标" />
 </p>
 
@@ -222,10 +223,13 @@ SuperIslandTests/                Swift 单元测试
 assets/                         项目标志与播放器总览
 scripts/                        构建、发布与离线截图工具
 docs/                           功能说明、图鉴和截图
+  index.html                    GitHub Pages 产品官网
 project.yml                     XcodeGen 工程配置
 ```
 
 ## 来源、许可与贡献
+
+产品官网部署与更新说明见 [WEBSITE.md](docs/WEBSITE.md)。
 
 感谢 [shobhit99/SuperIsland](https://github.com/shobhit99/SuperIsland) 的原始宿主与扩展系统，以及 MediaRemote Adapter、OpenCC、qrc-decoder、pako 等项目。14 种新增歌词场景参考了 [Folia](https://github.com/chthollyphile/folia-major) 的视觉构思，使用 SwiftUI 独立实现，没有打包其代码、字体、模型或 GPU 渲染器。
 
