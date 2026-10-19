@@ -3,6 +3,9 @@ import AppKit
 
 private let linearMentionsExtensionID = "superisland.linear-mentions"
 private let lastFmScrobblerExtensionID = "superisland.lastfm-scrobbler"
+private let liveOrdersExtensionID = "superisland.live-orders"
+private let meituanDeliveryExtensionID = "superisland.meituan-delivery"
+private let cainiaoPackagesExtensionID = "superisland.cainiao-packages"
 
 private enum ExtensionListFilter: String, CaseIterable, Identifiable {
     case all
@@ -12,8 +15,8 @@ private enum ExtensionListFilter: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .all: return "All"
-        case .active: return "Active"
+        case .all: return L10n.string("All")
+        case .active: return L10n.string("Active")
         }
     }
 }
@@ -124,6 +127,24 @@ struct ExtensionsSettingsView: View {
                         }
                     }
 
+                    if manifest.id == liveOrdersExtensionID {
+                        SettingsCard(title: "JD Order Connection") {
+                            LiveOrdersSettingsView(platforms: [.jd])
+                        }
+                    }
+
+                    if manifest.id == meituanDeliveryExtensionID {
+                        SettingsCard(title: "Meituan Delivery Connection") {
+                            LiveOrdersSettingsView(platforms: [.meituan])
+                        }
+                    }
+
+                    if manifest.id == cainiaoPackagesExtensionID {
+                        SettingsCard(title: "Cainiao Package Connection") {
+                            LiveOrdersSettingsView(platforms: [.cainiao])
+                        }
+                    }
+
                     if manifest.id == linearMentionsExtensionID {
                         SettingsCard(title: "Linear Login") {
                             LinearOAuthSettingsView()
@@ -202,7 +223,7 @@ struct ExtensionsSettingsView: View {
                     extensionIcon(for: manifest, size: 36)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(manifest.name)
+                        Text(L10n.string(manifest.name))
                             .font(.title3.weight(.semibold))
                         Text("\(manifest.id) • v\(manifest.version)")
                             .font(.system(size: 11, design: .monospaced))
@@ -212,7 +233,7 @@ struct ExtensionsSettingsView: View {
 
                 Spacer()
 
-                Text(manager.runtimes[manifest.id] == nil ? "Inactive" : "Active")
+                Text(L10n.string(manager.runtimes[manifest.id] == nil ? "Inactive" : "Active"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -223,12 +244,12 @@ struct ExtensionsSettingsView: View {
                     .foregroundColor(manager.runtimes[manifest.id] == nil ? .secondary : .green)
             }
 
-            Text(manifest.description)
+            Text(L10n.string(manifest.description))
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.secondary)
 
             HStack(spacing: 10) {
-                Button(manager.runtimes[manifest.id] == nil ? "Activate" : "Reload") {
+                Button(L10n.string(manager.runtimes[manifest.id] == nil ? "Activate" : "Reload")) {
                     if manager.runtimes[manifest.id] == nil {
                         manager.activate(extensionID: manifest.id)
                     } else {
@@ -255,7 +276,7 @@ struct ExtensionsSettingsView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(manifest.name)
+                    Text(L10n.string(manifest.name))
                         .font(.system(size: 13, weight: .semibold))
                         .lineLimit(1)
 
@@ -296,7 +317,7 @@ struct ExtensionsSettingsView: View {
     @ViewBuilder
     private func sourceBadge(for manifest: ExtensionManifest) -> some View {
         let source = extensionSource(for: manifest)
-        Text(source.label)
+        Text(L10n.string(source.label))
             .font(.system(size: 9, weight: .semibold))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -349,7 +370,7 @@ struct ExtensionsSettingsView: View {
 
     private func metadataRow(label: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(label)
+            Text(L10n.string(label))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.secondary)
                 .frame(width: 90, alignment: .leading)
@@ -439,17 +460,17 @@ private struct LinearOAuthSettingsView: View {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 9, height: 9)
-                Text(statusTitle)
+                Text(L10n.string(statusTitle))
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
             }
 
-            Text(statusMessage)
+            Text(L10n.string(statusMessage))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
             HStack(spacing: 8) {
-                Button(primaryButtonTitle) {
+                Button(L10n.string(primaryButtonTitle)) {
                     openAuthorizeURL()
                 }
                 .buttonStyle(.borderedProminent)
@@ -540,7 +561,7 @@ private struct LinearOAuthSettingsView: View {
 
     private func expirationLabel(expiresAt: Date, isExpired: Bool) -> String {
         let formatted = expiresAt.formatted(date: .abbreviated, time: .shortened)
-        return isExpired ? "Expired at \(formatted)" : "Expires at \(formatted)"
+        return L10n.format(isExpired ? "Expired at %@" : "Expires at %@", formatted)
     }
 }
 
@@ -616,17 +637,17 @@ private struct LastFmOAuthSettingsView: View {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 9, height: 9)
-                Text(statusTitle)
+                Text(L10n.string(statusTitle))
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
             }
 
-            Text(statusMessage)
+            Text(L10n.string(statusMessage))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
             HStack(spacing: 8) {
-                Button(primaryButtonTitle) {
+                Button(L10n.string(primaryButtonTitle)) {
                     openAuthorizeURL()
                 }
                 .buttonStyle(.borderedProminent)
@@ -690,7 +711,7 @@ private struct LastFmOAuthSettingsView: View {
                 return "Your Last.fm session has expired. Authenticate again to resume scrobbling."
             }
             if !session.username.isEmpty {
-                return "Last.fm is connected as \(session.username). New plays will scrobble automatically."
+                return L10n.format("Last.fm is connected as %@. New plays will scrobble automatically.", session.username)
             }
             return "Last.fm is connected. New plays will scrobble automatically."
         }
@@ -726,7 +747,7 @@ private struct LastFmOAuthSettingsView: View {
 
     private func expirationLabel(expiresAt: Date, isExpired: Bool) -> String {
         let formatted = expiresAt.formatted(date: .abbreviated, time: .shortened)
-        return isExpired ? "Expired at \(formatted)" : "Expires at \(formatted)"
+        return L10n.format(isExpired ? "Expired at %@" : "Expires at %@", formatted)
     }
 }
 
@@ -801,12 +822,12 @@ private struct WhatsAppWebBridgeSettingsView: View {
                 Circle()
                     .fill(stateColor)
                     .frame(width: 9, height: 9)
-                Text(stateTitle)
+                Text(L10n.string(stateTitle))
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
             }
 
-            Text(bridge.statusText)
+            Text(L10n.string(bridge.statusText))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 

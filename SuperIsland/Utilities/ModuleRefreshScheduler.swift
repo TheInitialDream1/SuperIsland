@@ -10,26 +10,28 @@ enum EnergyMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .normal: return "Normal"
-        case .smart: return "Smart"
-        case .lowPower: return "Low Power"
+        case .normal: return L10n.string("Normal")
+        case .smart: return L10n.string("Smart")
+        case .lowPower: return L10n.string("Low Power")
         }
     }
 
     var description: String {
         switch self {
         case .normal:
-            return "Keep refresh behavior responsive."
+            return L10n.string("Keep refresh behavior responsive.")
         case .smart:
-            return "Reduce background work while collapsed and restore quickly on hover."
+            return L10n.string("Reduce background work while collapsed and restore quickly on hover.")
         case .lowPower:
-            return "Slow non-essential refresh and pause inactive extension work."
+            return L10n.string("Slow non-essential refresh and pause inactive extension work.")
         }
     }
 }
 
 enum ModuleRefreshPolicy: Equatable {
     case eventDriven
+    /// Playback clocks remain responsive regardless of module visibility or energy mode.
+    case realtime(TimeInterval, tolerance: TimeInterval)
     case interval(TimeInterval, tolerance: TimeInterval)
     case activeOnly(TimeInterval, tolerance: TimeInterval)
     case visibleOnly(TimeInterval, tolerance: TimeInterval)
@@ -39,6 +41,8 @@ enum ModuleRefreshPolicy: Equatable {
         switch self {
         case .eventDriven:
             return "Event driven"
+        case .realtime(let interval, _):
+            return "Playback every \(Self.format(interval))"
         case .interval(let interval, _):
             return "Every \(Self.format(interval))"
         case .activeOnly(let interval, _):
@@ -260,6 +264,8 @@ final class ModuleRefreshScheduler: ObservableObject {
         switch job.policy {
         case .eventDriven, .manual:
             return nil
+        case .realtime(let interval, let tolerance):
+            return (max(0.1, interval), max(0, tolerance))
         case .interval(let interval, let tolerance):
             return adjustedSchedule(interval: interval, tolerance: tolerance, module: job.module)
         case .activeOnly(let interval, let tolerance):
@@ -311,7 +317,7 @@ final class ModuleRefreshScheduler: ObservableObject {
             return "Manual"
         case .activeOnly, .visibleOnly:
             return job.enabled() ? "Paused" : "Disabled"
-        case .interval:
+        case .interval, .realtime:
             return "Paused"
         }
     }

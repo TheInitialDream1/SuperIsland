@@ -4,19 +4,36 @@ struct FullExpandedView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
-            if !appState.hasFullExpandedShoulderBarSpace {
-                FullExpandedTopBarView(layout: .inline)
-                    .environmentObject(appState)
-                    .padding(.bottom, 8)
+        Group {
+            if appState.usesArtworkBackground {
+                ZStack(alignment: .top) {
+                    paddedTabContent
+                    if !appState.hasFullExpandedShoulderBarSpace {
+                        FullExpandedTopBarView(layout: .inline)
+                            .environmentObject(appState)
+                    }
+                }
+            } else {
+                // Other extensions own the entire area below their toolbar.
+                // Keeping it in the stack preserves both layout and hit tests.
+                VStack(spacing: 0) {
+                    if !appState.hasFullExpandedShoulderBarSpace {
+                        FullExpandedTopBarView(layout: .inline)
+                            .environmentObject(appState)
+                            .padding(.bottom, 8)
+                    }
+                    paddedTabContent
+                }
             }
-
-            currentTabContent
-                .padding(.horizontal, contentHorizontalPadding)
-                .padding(.bottom, contentBottomPadding)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var paddedTabContent: some View {
+        currentTabContent
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.bottom, contentBottomPadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     @ViewBuilder
@@ -73,6 +90,7 @@ struct FullExpandedView: View {
     }
 
     private var contentHorizontalPadding: CGFloat {
+        if appState.usesArtworkBackground { return 0 }
         switch effectiveSelectedTab {
         case .home:
             return 0
@@ -86,6 +104,7 @@ struct FullExpandedView: View {
     }
 
     private var contentBottomPadding: CGFloat {
+        if appState.usesArtworkBackground { return 0 }
         switch effectiveSelectedTab {
         case .home:
             return 0
@@ -106,6 +125,7 @@ struct FullExpandedTopBarView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject private var batteryManager = BatteryManager.shared
     @ObservedObject private var notificationManager = NotificationManager.shared
+    @State private var isToolbarHovered = false
 
     let layout: FullExpandedTopBarLayout
 
@@ -119,12 +139,54 @@ struct FullExpandedTopBarView: View {
 
     var body: some View {
         Group {
+            if appState.usesArtworkBackground {
+                immersiveToolbar
+            } else if layout == .inline {
+                toolbarContent.frame(height: hoverZoneHeight)
+            } else {
+                toolbarContent
+            }
+        }
+        .onChange(of: appState.usesArtworkBackground) { _, _ in isToolbarHovered = false }
+    }
+
+    private var immersiveToolbar: some View {
+        ZStack(alignment: .top) {
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: hoverZoneHeight)
+                .contentShape(Rectangle())
+
+            toolbarContent
+                .opacity(isToolbarHovered ? 1 : 0)
+                .allowsHitTesting(isToolbarHovered)
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
+        .frame(height: hoverZoneHeight, alignment: .top)
+        .contentShape(Rectangle())
+        .overlay {
+            NativeHoverRegion { hovered in
+                withAnimation(.easeOut(duration: hovered ? 0.12 : 0.16)) {
+                    isToolbarHovered = hovered
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarContent: some View {
+        Group {
             if layout == .shoulder {
                 shoulderBar
             } else {
                 inlineBar
             }
         }
+    }
+
+    private var hoverZoneHeight: CGFloat {
+        layout == .shoulder ? 42 : 48
     }
 
     private var inlineBar: some View {
@@ -248,6 +310,7 @@ struct FullExpandedTopBarView: View {
                     Circle()
                         .stroke(Color.white.opacity(0.035), lineWidth: 1)
                 )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hoverPointer()
@@ -276,6 +339,7 @@ struct FullExpandedTopBarView: View {
                     Circle()
                         .stroke(Color.white.opacity(isSelected ? 0.09 : 0.035), lineWidth: 1)
                 )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hoverPointer()
@@ -304,6 +368,7 @@ struct FullExpandedTopBarView: View {
                     Circle()
                         .stroke(Color.white.opacity(isLocked ? 0.11 : 0.035), lineWidth: 1)
                 )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hoverPointer()
@@ -353,6 +418,7 @@ struct FullExpandedTopBarView: View {
                         notificationCountBadge
                     }
                 }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hoverPointer()
@@ -417,8 +483,8 @@ struct FullExpandedTopBarView: View {
     private var islandSurfaceFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color.black.opacity(0.98),
-                Color.black.opacity(0.94)
+                appState.usesArtworkBackground ? Color.white.opacity(0.08) : Color.black.opacity(0.98),
+                appState.usesArtworkBackground ? Color.white.opacity(0.04) : Color.black.opacity(0.94)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -462,7 +528,9 @@ struct FullExpandedTopBarView: View {
     }
 }
 
+@MainActor
 private struct FullExpandedTabButton: View {
+    @Environment(\.lyricsUsesIslandBackground) private var usesArtworkBackground
     let tab: FullExpandedTab
     let isSelected: Bool
     var showsTitle: Bool = true
@@ -482,13 +550,14 @@ private struct FullExpandedTabButton: View {
             }
             .padding(.horizontal, showsTitle && isSelected ? 11 : 10)
             .padding(.vertical, 6)
+            .frame(minWidth: showsTitle ? 32 : 36, minHeight: 32)
             .background(
                 Capsule(style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.black.opacity(0.98),
-                                Color.black.opacity(0.94)
+                                usesArtworkBackground ? Color.white.opacity(0.08) : Color.black.opacity(0.98),
+                                usesArtworkBackground ? Color.white.opacity(0.04) : Color.black.opacity(0.94)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -503,6 +572,7 @@ private struct FullExpandedTabButton: View {
                 Capsule(style: .continuous)
                     .stroke(Color.white.opacity(isSelected ? 0.12 : 0.08), lineWidth: 1)
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hoverPointer()
@@ -520,6 +590,79 @@ private struct FullExpandedTabButton: View {
         } else {
             Image(systemName: tab.iconName)
                 .font(.system(size: 11, weight: .semibold))
+        }
+    }
+}
+
+/// Tracks the full toolbar rectangle without becoming a mouse-event target.
+/// Child buttons can rebuild their tracking areas without hiding the toolbar.
+struct NativeHoverRegion: NSViewRepresentable {
+    var onHover: (Bool) -> Void
+
+    func makeNSView(context: Context) -> TrackingView {
+        let view = TrackingView()
+        view.onHover = onHover
+        return view
+    }
+
+    func updateNSView(_ view: TrackingView, context: Context) {
+        view.onHover = onHover
+    }
+
+    final class TrackingView: NSView {
+        var onHover: ((Bool) -> Void)?
+        private var tracking: NSTrackingArea?
+        private var eventMonitor: Any?
+        private var hovered = false
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        override func updateTrackingAreas() {
+            if let tracking { removeTrackingArea(tracking) }
+            let area = NSTrackingArea(rect: bounds,
+                                      options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .enabledDuringMouseDrag],
+                                      owner: self, userInfo: nil)
+            addTrackingArea(area)
+            tracking = area
+            super.updateTrackingAreas()
+            refreshHover()
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let eventMonitor { NSEvent.removeMonitor(eventMonitor) }
+            eventMonitor = nil
+            guard window != nil else { return }
+            // Observe the window's events even when a SwiftUI child owns the
+            // event target. Returning the event preserves normal button clicks.
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [
+                .mouseMoved, .leftMouseDragged, .rightMouseDragged,
+                .mouseEntered, .mouseExited, .leftMouseDown, .leftMouseUp
+            ]) { [weak self] event in
+                guard let self else { return event }
+                if event.window === self.window {
+                    self.refreshHover(at: event.locationInWindow)
+                }
+                return event
+            }
+        }
+
+        deinit {
+            if let eventMonitor { NSEvent.removeMonitor(eventMonitor) }
+        }
+
+        override func mouseEntered(with event: NSEvent) { refreshHover(at: event.locationInWindow) }
+        override func mouseExited(with event: NSEvent) { refreshHover(at: event.locationInWindow) }
+        override func mouseMoved(with event: NSEvent) { refreshHover(at: event.locationInWindow) }
+
+        private func refreshHover(at location: NSPoint? = nil) {
+            guard let window else { return }
+            let point = convert(location ?? window.mouseLocationOutsideOfEventStream, from: nil)
+            let next = !isHiddenOrHasHiddenAncestor && bounds.contains(point) && visibleRect.contains(point)
+            guard hovered != next else { return }
+            hovered = next
+            // Tracking areas are also rebuilt during SwiftUI layout.
+            DispatchQueue.main.async { [weak self] in self?.onHover?(next) }
         }
     }
 }

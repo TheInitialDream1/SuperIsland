@@ -379,10 +379,10 @@ final class AgentsStatusBridge {
         didWarnPortConflict = true
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = "Agents Status port \(Self.port) is in use"
-            alert.informativeText = "Another process on this Mac is already listening on 127.0.0.1:\(Self.port). A leftover agents-status server from a previous Super Island run is the most common cause. Open Terminal and run `lsof -iTCP:\(Self.port) -sTCP:LISTEN` to find it, then quit that process (or reboot) and relaunch Super Island."
+            alert.messageText = L10n.format("Agents Status port %@ is in use", String(Self.port))
+            alert.informativeText = L10n.format("Another process on this Mac is already listening on 127.0.0.1:%@. A leftover agents-status server from a previous Super Island run is the most common cause. Open Terminal and run `lsof -iTCP:%@ -sTCP:LISTEN` to find it, then quit that process (or reboot) and relaunch Super Island.", String(Self.port), String(Self.port))
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Got it")
+            alert.addButton(withTitle: L10n.string("Got it"))
             _ = alert.runModal()
         }
     }
@@ -392,10 +392,10 @@ final class AgentsStatusBridge {
         didWarnPythonMissing = true
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = "Python 3 required for Agents Status"
-            alert.informativeText = "Agents Status tracks your Claude Code and Codex CLI sessions through a small background service that needs Python 3. On macOS, install the Command Line Tools by running `xcode-select --install` in Terminal, then restart Super Island."
+            alert.messageText = L10n.string("Python 3 required for Agents Status")
+            alert.informativeText = L10n.string("Agents Status tracks your Claude Code and Codex CLI sessions through a small background service that needs Python 3. On macOS, install the Command Line Tools by running `xcode-select --install` in Terminal, then restart Super Island.")
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Got it")
+            alert.addButton(withTitle: L10n.string("Got it"))
             _ = alert.runModal()
         }
     }

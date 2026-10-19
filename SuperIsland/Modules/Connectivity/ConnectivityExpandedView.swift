@@ -104,17 +104,17 @@ struct ConnectivityExpandedView: View {
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(status)
+                Text(L10n.string(status))
                     .font(.system(size: 10))
                     .foregroundColor(statusColor)
 
-                Text(title)
+                Text(L10n.string(title))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
 
                 if let detail, !detail.isEmpty {
-                    Text(detail)
+                    Text(L10n.string(detail))
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)

@@ -22,11 +22,11 @@ enum ShelfRetentionOption: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .never: return "Never"
-        case .oneDay: return "1 day"
-        case .oneWeek: return "7 days"
-        case .oneMonth: return "30 days"
-        case .threeMonths: return "90 days"
+        case .never: return L10n.string("Never")
+        case .oneDay: return L10n.string("1 day")
+        case .oneWeek: return L10n.string("7 days")
+        case .oneMonth: return L10n.string("30 days")
+        case .threeMonths: return L10n.string("90 days")
         }
     }
 }
@@ -490,7 +490,7 @@ final class ShelfStore: ObservableObject {
     }
 
     func handleAirDropDrop(providers: [NSItemProvider]) -> Bool {
-        guard !providers.isEmpty else { return false }
+        guard AppState.shared.shelfAirDropEnabled, !providers.isEmpty else { return false }
 
         Task {
             let droppedItems = await Self.extractItems(from: providers)
@@ -503,6 +503,7 @@ final class ShelfStore: ObservableObject {
     }
 
     func openAirDropPicker() {
+        guard AppState.shared.shelfAirDropEnabled else { return }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
@@ -514,6 +515,7 @@ final class ShelfStore: ObservableObject {
     }
 
     func shareViaAirDrop(items: [ShelfItem]) {
+        guard AppState.shared.shelfAirDropEnabled else { return }
         let rawItems = items.compactMap(airDropPayload(for:))
         shareViaAirDrop(rawItems: rawItems)
         items.forEach(touch)
@@ -608,7 +610,8 @@ final class ShelfStore: ObservableObject {
     }
 
     private func shareViaAirDrop(rawItems: [Any]) {
-        guard !rawItems.isEmpty,
+        guard AppState.shared.shelfAirDropEnabled,
+              !rawItems.isEmpty,
               let service = NSSharingService(named: .sendViaAirDrop),
               service.canPerform(withItems: rawItems) else {
             NSSound.beep()

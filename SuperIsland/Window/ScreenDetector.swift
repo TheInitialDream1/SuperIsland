@@ -69,40 +69,48 @@ enum ScreenDetector {
 
     /// Get the primary screen
     static var primaryScreen: NSScreen? {
-        NSScreen.main
+        // NSScreen.main follows the key window and changes as apps gain focus.
+        // The first connected screen contains the menu bar and is stable.
+        NSScreen.screens.first
     }
 
-    /// Stable, per-display identifier string (`CGDirectDisplayID` as text).
-    /// Persisted in settings so the user's chosen display survives relaunches.
+    /// A display UUID survives reconnects/relaunches, unlike a transient display ID.
     static func displayIDString(for screen: NSScreen) -> String? {
         let key = NSDeviceDescriptionKey("NSScreenNumber")
         guard let number = screen.deviceDescription[key] as? NSNumber else {
             return nil
         }
-        return String(number.uint32Value)
+        let displayID = number.uint32Value
+        if let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() {
+            return "uuid:" + (CFUUIDCreateString(nil, uuid) as String)
+        }
+        return String(displayID)
     }
 
     /// Find a screen by the identifier produced by `displayIDString`.
     static func screen(withIDString id: String) -> NSScreen? {
         guard !id.isEmpty else { return nil }
-        return NSScreen.screens.first { displayIDString(for: $0) == id }
+        return NSScreen.screens.first {
+            if displayIDString(for: $0) == id { return true }
+            // Read older saved numeric IDs and migrate them when connected.
+            let number = $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+            return number.map { String($0.uint32Value) == id } ?? false
+        }
     }
 
     /// Sentinel id for the "show on every connected display" mode.
     static let allDisplaysIdentifier = "all"
 
     /// Human-readable list of the connected screens for the display picker.
-    /// First entry is always "Automatic" (empty id == follow default rules).
+    /// An empty choice uses the fixed menu-bar display, never the cursor screen.
     struct ScreenOption: Identifiable, Hashable {
-        let id: String           // "" for Automatic, "all" for every display, otherwise CGDirectDisplayID string
+        let id: String           // "" for primary, "all" for every display, otherwise display UUID
         let name: String
     }
 
     static func availableScreenOptions() -> [ScreenOption] {
-        var options: [ScreenOption] = [ScreenOption(id: "", name: "Automatic")]
-        if NSScreen.screens.count > 1 {
-            options.append(ScreenOption(id: allDisplaysIdentifier, name: "All Displays"))
-        }
+        var options: [ScreenOption] = [ScreenOption(id: "", name: "主显示器（固定）"),
+                                      ScreenOption(id: allDisplaysIdentifier, name: "所有显示器")]
         for screen in NSScreen.screens {
             guard let id = displayIDString(for: screen) else { continue }
             let name: String

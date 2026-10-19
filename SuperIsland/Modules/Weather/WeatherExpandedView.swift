@@ -24,7 +24,7 @@ struct WeatherExpandedView: View {
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
 
-                    Text(manager.weather.condition)
+                    Text(L10n.weatherCondition(manager.weather.condition))
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -108,7 +108,7 @@ struct WeatherExpandedView: View {
                 .frame(width: 16, alignment: .center)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(title)
+                Text(L10n.string(title))
                     .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.white.opacity(0.4))
                 Text(value)

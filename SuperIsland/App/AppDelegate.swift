@@ -144,8 +144,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rebuildStatusMenu()
         state.refreshEnergyState()
 
+        #if !SUPERISLAND_CUSTOM_HEIGHT
         UpdateChecker.shared.checkIfDue()
         observeUpdateState()
+        #endif
     }
 
     private func observeUpdateState() {
@@ -315,7 +317,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(makeMenuItem(title: "Battery", action: #selector(showBattery)))
         menu.addItem(NSMenuItem.separator())
 
-        let modulesItem = NSMenuItem(title: "Modules", action: nil, keyEquivalent: "")
+        let modulesItem = NSMenuItem(title: L10n.string("Modules"), action: nil, keyEquivalent: "")
         let modulesMenu = NSMenu()
 
         for module in ModuleType.allCases {
@@ -333,7 +335,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !extensionModules.isEmpty {
             modulesMenu.addItem(.separator())
             for manifest in extensionModules {
-                let extensionItem = NSMenuItem(title: manifest.name, action: #selector(toggleExtension(_:)), keyEquivalent: "")
+                let extensionItem = NSMenuItem(title: L10n.string(manifest.name), action: #selector(toggleExtension(_:)), keyEquivalent: "")
                 extensionItem.target = self
                 extensionItem.representedObject = manifest.id
                 extensionItem.state = ExtensionManager.shared.runtimes[manifest.id] != nil ? .on : .off
@@ -395,7 +397,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeMenuItem(title: String, action: Selector, keyEquivalent: String = "") -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        let item = NSMenuItem(title: L10n.string(title), action: action, keyEquivalent: keyEquivalent)
         item.target = self
         return item
     }
@@ -473,7 +475,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hostingController = NSHostingController(rootView: rootView)
 
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "SuperIsland Settings"
+        window.title = L10n.string("SuperIsland Settings")
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.setContentSize(NSSize(width: 960, height: 680))
         window.minSize = NSSize(width: 800, height: 560)

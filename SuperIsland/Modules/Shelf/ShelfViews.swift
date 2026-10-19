@@ -97,8 +97,10 @@ struct ShelfFullExpandedView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            AirDropDropPane()
-                .frame(width: 142)
+            if appState.shelfAirDropEnabled {
+                AirDropDropPane()
+                    .frame(width: 142)
+            }
 
             TrayDropPane(
                 items: filteredItems,
@@ -471,6 +473,7 @@ private struct TrayItemTile: View {
 private struct ShelfItemActionsMenu: View {
     let item: ShelfItem
     @ObservedObject private var shelf = ShelfStore.shared
+    @ObservedObject private var appState = AppState.shared
 
     var body: some View {
         Button(item.isPinned ? "Unpin" : "Pin") {
@@ -516,8 +519,10 @@ private struct ShelfItemActionsMenu: View {
                 shelf.share(items: [item])
             }
 
-            Button("Share via AirDrop") {
-                shelf.shareViaAirDrop(items: [item])
+            if appState.shelfAirDropEnabled {
+                Button("Share via AirDrop") {
+                    shelf.shareViaAirDrop(items: [item])
+                }
             }
         }
 

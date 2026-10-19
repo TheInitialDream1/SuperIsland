@@ -19,27 +19,27 @@ enum PermissionType: CaseIterable {
 
     var title: String {
         switch self {
-        case .accessibility: return "Accessibility"
-        case .screenRecording: return "Screen Recording"
-        case .calendar: return "Calendar"
-        case .notifications: return "Notifications"
-        case .microphone: return "Microphone"
-        case .speechRecognition: return "Speech Recognition"
-        case .location: return "Location"
-        case .bluetooth: return "Bluetooth"
+        case .accessibility: return L10n.string("Accessibility")
+        case .screenRecording: return L10n.string("Screen Recording")
+        case .calendar: return L10n.string("Calendar")
+        case .notifications: return L10n.string("Notifications")
+        case .microphone: return L10n.string("Microphone")
+        case .speechRecognition: return L10n.string("Speech Recognition")
+        case .location: return L10n.string("Location")
+        case .bluetooth: return L10n.string("Bluetooth")
         }
     }
 
     var description: String {
         switch self {
-        case .accessibility: return "Needed for gesture detection and system event monitoring"
-        case .screenRecording: return "Lets SuperIsland appear properly in screen recordings"
-        case .calendar: return "Show upcoming events in the Super Island"
-        case .notifications: return "Show supported notification sources in the Super Island"
-        case .microphone: return "Audio visualization for the spectrogram"
-        case .speechRecognition: return "Follow along with Teleprompter scripts as you read"
-        case .location: return "Provide weather information for your location"
-        case .bluetooth: return "Show connected device notifications"
+        case .accessibility: return L10n.string("Needed for gesture detection and system event monitoring")
+        case .screenRecording: return L10n.string("Lets SuperIsland appear properly in screen recordings")
+        case .calendar: return L10n.string("Show upcoming events in the Super Island")
+        case .notifications: return L10n.string("Show supported notification sources in the Super Island")
+        case .microphone: return L10n.string("Audio visualization for the spectrogram")
+        case .speechRecognition: return L10n.string("Follow along with Teleprompter scripts as you read")
+        case .location: return L10n.string("Provide weather information for your location")
+        case .bluetooth: return L10n.string("Show connected device notifications")
         }
     }
 

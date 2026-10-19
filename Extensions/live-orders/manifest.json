@@ -1,0 +1,28 @@
+{
+  "id": "superisland.live-orders",
+  "name": "JD Orders",
+  "version": "0.2.0",
+  "minAppVersion": "1.0.10",
+  "main": "index.js",
+  "author": { "name": "SuperIsland Custom" },
+  "description": "Show live delivery progress from your connected JD account.",
+  "icon": "icon.svg",
+  "license": "MIT",
+  "categories": ["productivity", "lifestyle"],
+  "permissions": ["network", "storage"],
+  "capabilities": {
+    "compact": true,
+    "expanded": true,
+    "fullExpanded": true,
+    "minimalCompact": true,
+    "backgroundRefresh": true,
+    "settings": true
+  },
+  "layout": {
+    "expandedHeight": 116,
+    "fullExpandedHeight": 180
+  },
+  "refreshInterval": 2.0,
+  "activationTriggers": ["manual", "timer"],
+  "defaultEnabled": true
+}

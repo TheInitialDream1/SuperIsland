@@ -554,6 +554,7 @@ private struct ArcShape: Shape {
 
 // MARK: - Screen 4: Extensions
 
+@MainActor
 private struct OnboardingExtensionInfo: Identifiable {
     let id: String
     let name: String
@@ -637,6 +638,7 @@ private struct ExtensionsScreen: View {
     }
 }
 
+@MainActor
 private struct ExtensionRow: View {
     let ext: OnboardingExtensionInfo
     let isEnabled: Bool
@@ -649,12 +651,12 @@ private struct ExtensionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(ext.name)
+                    Text(L10n.string(ext.name))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(OBColors.textPrimary)
 
                     if let badge = ext.badge {
-                        Text(badge)
+                        Text(L10n.string(badge))
                             .font(.system(size: 9, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.white.opacity(0.45))
                             .padding(.horizontal, 6)
@@ -663,7 +665,7 @@ private struct ExtensionRow: View {
                     }
                 }
 
-                Text(ext.description)
+                Text(L10n.string(ext.description))
                     .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(OBColors.textTertiary)
             }
@@ -671,7 +673,7 @@ private struct ExtensionRow: View {
             Spacer(minLength: 4)
 
             Button(action: toggle) {
-                Text(isEnabled ? "Added" : "Add")
+                Text(L10n.string(isEnabled ? "Added" : "Add"))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(isEnabled ? OBColors.accent : Color.white.opacity(0.85))
                     .padding(.horizontal, 14)
@@ -812,13 +814,13 @@ private struct SummaryRow: View {
                 .foregroundStyle(OBColors.accent)
                 .frame(width: 24)
 
-            Text(title)
+            Text(L10n.string(title))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(OBColors.textPrimary)
 
             Spacer()
 
-            Text(detail)
+            Text(L10n.string(detail))
                 .font(.system(size: 12, weight: .regular))
                 .foregroundStyle(OBColors.textSecondary)
                 .lineLimit(1)
@@ -839,7 +841,7 @@ private struct PrimaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(L10n.string(title))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.black.opacity(isDisabled ? 0.5 : 0.92))
                 .frame(width: 200, height: 42)
@@ -1060,9 +1062,9 @@ private extension PermissionType {
     var requestActionTitle: String {
         switch self {
         case .bluetooth:
-            return "Open Settings"
+            return L10n.string("Open Settings")
         default:
-            return "Request Access"
+            return L10n.string("Request Access")
         }
     }
 }

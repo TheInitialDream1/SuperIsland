@@ -35,13 +35,14 @@ enum HomeWidgetSelection: Hashable, Identifiable {
     var displayName: String {
         switch self {
         case .none:
-            return "None"
+            return L10n.string("None")
         case .builtIn(.nowPlaying):
-            return "Media Player"
+            return L10n.string("Media Player")
         case .builtIn(let module):
             return module.displayName
         case .extension_(let extensionID):
-            return ExtensionManager.shared.installed.first(where: { $0.id == extensionID })?.name ?? extensionID
+            let name = ExtensionManager.shared.installed.first(where: { $0.id == extensionID })?.name ?? extensionID
+            return L10n.string(name)
         }
     }
 

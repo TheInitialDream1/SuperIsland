@@ -39,12 +39,19 @@ cp -R "${BUILT_APP}" "${APP_PATH}"
 echo "==> Bundling Node.js runtime..."
 NODE_VERSION="20.19.0"
 NODE_TMP="$(mktemp -d)"
-curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-darwin-arm64.tar.gz" \
-  | tar -xz -C "${NODE_TMP}" --strip-components=2 "node-v${NODE_VERSION}-darwin-arm64/bin/node"
-cp "${NODE_TMP}/node" "${APP_PATH}/Contents/Resources/node"
+for NODE_ARCH in arm64 x64; do
+  mkdir -p "${NODE_TMP}/${NODE_ARCH}"
+  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-darwin-${NODE_ARCH}.tar.gz" \
+    | tar -xz -C "${NODE_TMP}/${NODE_ARCH}" --strip-components=2 \
+      "node-v${NODE_VERSION}-darwin-${NODE_ARCH}/bin/node"
+done
+lipo -create \
+  "${NODE_TMP}/arm64/node" \
+  "${NODE_TMP}/x64/node" \
+  -output "${APP_PATH}/Contents/Resources/node"
 chmod +x "${APP_PATH}/Contents/Resources/node"
 rm -rf "${NODE_TMP}"
-echo "   Bundled node v${NODE_VERSION} ($(du -sh "${APP_PATH}/Contents/Resources/node" | cut -f1))"
+echo "   Bundled universal node v${NODE_VERSION} ($(du -sh "${APP_PATH}/Contents/Resources/node" | cut -f1))"
 
 echo "==> Code signing for local testing..."
 # An unsigned app can't register with TCC (Calendar, Location, etc. won't appear in System Settings).
@@ -52,14 +59,17 @@ echo "==> Code signing for local testing..."
 CERT=$(security find-identity -v -p codesigning 2>/dev/null \
   | grep -E "Apple Development|Developer ID Application" \
   | head -1 \
-  | awk -F'"' '{print $2}')
+  | awk -F'"' '{print $2}' || true)
 if [ -n "${CERT}" ]; then
   codesign --deep --force --sign "${CERT}" \
     --entitlements "SuperIsland/SuperIsland.entitlements" \
     "${APP_PATH}"
   echo "   Signed with: ${CERT}"
 else
-  echo "   Warning: no signing certificate found — TCC permissions (Calendar, etc.) won't register."
+  codesign --deep --force --sign - \
+    --entitlements "SuperIsland/SuperIsland.entitlements" \
+    "${APP_PATH}"
+  echo "   Ad-hoc signed (local development build)."
 fi
 
 echo "==> Preparing DMG contents..."

@@ -74,12 +74,12 @@ final class WiFiManager: ObservableObject {
     }
 
     var signalDescription: String {
-        guard isConnected else { return "Not connected" }
+        guard isConnected else { return L10n.string("Not connected") }
         let rssi = signalStrength
-        if rssi > -50 { return "Excellent signal" }
-        if rssi > -60 { return "Strong signal" }
-        if rssi > -70 { return "Fair signal" }
-        return "Weak signal"
+        if rssi > -50 { return L10n.string("Excellent signal") }
+        if rssi > -60 { return L10n.string("Strong signal") }
+        if rssi > -70 { return L10n.string("Fair signal") }
+        return L10n.string("Weak signal")
     }
 
     deinit {

@@ -1,0 +1,10 @@
+"CFBundleDisplayName" = "SuperIsland";
+"NSAppleEventsUsageDescription" = "SuperIsland 需要自动化权限，以检测浏览器和音乐应用中当前播放的媒体。";
+"NSBluetoothAlwaysUsageDescription" = "SuperIsland 需要蓝牙权限，以显示已连接设备的通知。";
+"NSCalendarsFullAccessUsageDescription" = "SuperIsland 需要日历权限，以显示即将发生的日程。";
+"NSCalendarsUsageDescription" = "SuperIsland 需要日历权限，以显示即将发生的日程。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "SuperIsland 需要位置权限，以提供天气信息。";
+"NSLocationUsageDescription" = "SuperIsland 需要位置权限，以提供天气信息。";
+"NSLocationWhenInUseUsageDescription" = "SuperIsland 需要位置权限，以提供天气信息。";
+"NSMicrophoneUsageDescription" = "SuperIsland 需要麦克风权限，以提供音频可视化和提词器语音跟读。";
+"NSSpeechRecognitionUsageDescription" = "SuperIsland 使用语音识别，在你朗读时自动跟随提词器脚本。";

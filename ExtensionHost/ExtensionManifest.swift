@@ -52,6 +52,15 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
         }
     }
 
+    struct Layout: Codable, Hashable {
+        var expandedHeight: Double? = nil
+        var fullExpandedHeight: Double? = nil
+
+        var isEmpty: Bool {
+            expandedHeight == nil && fullExpandedHeight == nil
+        }
+    }
+
     let id: String
     let name: String
     let version: String
@@ -64,6 +73,7 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
     let categories: [String]
     let permissions: [String]
     let capabilities: Capabilities
+    let layout: Layout
     let refreshInterval: TimeInterval
     let activationTriggers: [String]
     let defaultEnabled: Bool
@@ -98,6 +108,7 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
         case categories
         case permissions
         case capabilities
+        case layout
         case refreshInterval
         case activationTriggers
         case defaultEnabled
@@ -118,6 +129,7 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
         categories = try container.decodeIfPresent([String].self, forKey: .categories) ?? []
         permissions = try container.decodeIfPresent([String].self, forKey: .permissions) ?? []
         capabilities = try container.decodeIfPresent(Capabilities.self, forKey: .capabilities) ?? Capabilities()
+        layout = try container.decodeIfPresent(Layout.self, forKey: .layout) ?? Layout()
         refreshInterval = max(0.1, try container.decodeIfPresent(Double.self, forKey: .refreshInterval) ?? 1.0)
         activationTriggers = try container.decodeIfPresent([String].self, forKey: .activationTriggers) ?? ["manual"]
         defaultEnabled = try container.decodeIfPresent(Bool.self, forKey: .defaultEnabled) ?? true
@@ -141,6 +153,9 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
         try container.encode(categories, forKey: .categories)
         try container.encode(permissions, forKey: .permissions)
         try container.encode(capabilities, forKey: .capabilities)
+        if !layout.isEmpty {
+            try container.encode(layout, forKey: .layout)
+        }
         try container.encode(refreshInterval, forKey: .refreshInterval)
         try container.encode(activationTriggers, forKey: .activationTriggers)
         try container.encode(defaultEnabled, forKey: .defaultEnabled)

@@ -67,6 +67,9 @@ Common fields:
   - `backgroundRefresh` (default `true`)
   - `settings` (default `true`)
   - `notificationFeed` (default `false`) - extension is hidden from module slots; `SuperIsland.island.activate()` opens the shared Notifications module
+- `layout` (optional):
+  - `expandedHeight`: preferred expanded content height in points (`72...180`)
+  - `fullExpandedHeight`: preferred full-expanded content height in points (`96...180`)
 - `refreshInterval` (seconds, default `1.0`, minimum `0.1`)
 - `activationTriggers` (default `["manual"]`)
 
@@ -123,6 +126,7 @@ Registers your extension module config.
 
 - `activate(autoDismiss = true)`
 - `dismiss()`
+- `setPreferredHeight({ expanded?, fullExpanded? })`: overrides manifest heights for the current runtime; passing a number sets only `fullExpanded`
 - `state`: `"compact" | "expanded" | "fullExpanded"`
 - `isActive`: boolean
 
@@ -204,6 +208,14 @@ Notes:
 - `startWhatsAppWeb()` -> starts the WhatsApp Web bridge (requires `"network"`)
 - `refreshWhatsAppWebQR()` -> reloads WhatsApp Web and refreshes QR code (requires `"network"`)
 - `sendWhatsAppWebMessage(recipient, message)` -> queues message send via the logged-in WhatsApp Web session (requires `"network"`)
+- `getLiveOrders(limit?)` -> normalized read-only JD, Meituan, and Cainiao bridge snapshot, including per-platform states (requires `"network"`)
+- `startLiveOrders()` -> starts all background order bridges without presenting login windows (requires `"network"`)
+- `startLiveOrderPlatform(platform)` -> starts one bridge; platform is `"jd"`, `"meituan"`, or `"cainiao"` (requires `"network"`)
+- `openLiveOrdersLogin()` -> backward-compatible shortcut that opens the isolated JD window (requires `"network"`)
+- `openLiveOrderPlatform(platform)` -> opens one platform's isolated login/order window (requires `"network"`)
+- `refreshLiveOrders()` -> refreshes all order pages (requires `"network"`)
+- `refreshLiveOrderPlatform(platform)` -> refreshes one connected order page (requires `"network"`)
+- `openLiveOrder(orderID)` -> opens a cached order's trusted detail page in its isolated platform window (requires `"network"`)
 
 Notes:
 
@@ -211,9 +223,12 @@ Notes:
 - Requires `"media"` for `getNowPlaying`.
 - Requires `"notifications"` for mirrored notification APIs.
 - Requires `"network"` for WhatsApp Web bridge APIs.
+- Requires `"network"` for live-order bridge APIs. Each platform has a separate host-owned WebKit data store; credentials and cookies are never exposed to extensions, which only receive normalized order fields.
 - `getNowPlaying()` returns:
-  - `{ sourceApp, bundleIdentifier, title, artist, album, albumArtist, durationSeconds, elapsedSeconds, artworkURL, playbackState, trackIdentifier, isLocalFile, capturedAtEpochMs }`
-  - `artworkURL`, `album`, `albumArtist`, and `trackIdentifier` are optional and may be `null`
+  - `{ sourceApp, bundleIdentifier, title, artist, album, albumArtist, durationSeconds, elapsedSeconds, playbackRate, clockAuthoritative, artworkURL, artworkColor, playbackState, trackIdentifier, isLocalFile, capturedAtEpochMs }`
+  - `artworkURL`, `album`, `albumArtist`, `trackIdentifier`, and `artworkColor` are optional and may be `null`
+  - `artworkColor` is `{ r, g, b, a }` with components from `0...1`, derived from the current album cover.
+
 - Data source precedence (aligned with CodexBar-style sources):
   - Codex: local summary files, then ChatGPT OAuth usage API (`/backend-api/wham/usage`) via `~/.codex/auth.json` token.
   - Claude: local summary files, then Claude OAuth usage API (`/api/oauth/usage`), then local stats cache fallback.
@@ -221,6 +236,20 @@ Notes:
 - Mirrored notification APIs require `"notifications"` permission and return entries shaped like:
   - `{ id, localID, appName, bundleIdentifier, appIcon, appIconURL, title, body, senderName, previewText, avatarURL, timestamp }`
   - `previewText`/`avatarURL` are best-effort and depend on what macOS exposes for that notification (privacy settings can hide previews).
+
+### Native now-playing player
+
+- `View.nowPlayingLyrics(options?)` renders the native album-themed lyric player. Pass `lines: [{ time, text }]`, `status` (`idle`, `loading`, `synced`, `plain`, `missing`, `instrumental`), optional `message`, `offsetSeconds` (defaults to 0) and `showArtwork`. Bind the document to `trackTitle`, `trackArtist` and `sourceBundleIdentifier` from the snapshot; the view hides lyrics that do not match the live player. Set `canCalibrate: true` to expose `offset-earlier`, `offset-later`, `offset-reset` and `retry` actions. `lyricSource` labels the provider (`qqmusic` or `kugou`).
+- The lyric view follows the host playback clock, fades neighboring lines, sweeps the active line over its LRC interval, and supports click-to-seek. Missing-lyrics retry sends the extension action `retry`.
+- Media snapshots return `clockAuthoritative: true`: `elapsedSeconds` is already projected to `capturedAtEpochMs`. `playbackRate` is the current speed, so extensions should not maintain a separate drift correction for these snapshots.
+- `View.nowPlayingPlayer(options?)` renders the host's native now-playing player inside an extension.
+- The player observes `NowPlayingManager` directly and includes previous, play/pause, next, and draggable seek controls.
+- `options.artworkSize` accepts `36...78` points and defaults to `54`.
+- `options.showArtwork` controls album artwork visibility and defaults to `true`.
+- `View.nowPlayingArtwork(options?)` renders only the current album artwork. `size` accepts `36...180` and `cornerRadius` accepts `0...32`.
+- `View.nowPlayingTransport(options?)` renders time, draggable progress, previous, play/pause, and next controls. Set `showProgress: false` to hide the progress line.
+- `View.nowPlayingBackdrop(child)` renders `child` over a full-size gradient and soft album-art color wash derived from the current cover.
+- Requires the extension to declare the `"media"` permission.
 
 ### `SuperIsland.playFeedback(type)`
 
@@ -454,3 +483,5 @@ Do not pass unsupported complex host objects. Stick to scalars, arrays, and plai
 ---
 
 If you want, a good next step is adding a small extension starter template (`manifest.json + index.js + settings.json`) under `Extensions/template/` for new contributors.
+
+`View.nowPlayingLyrics` rows may optionally include `words: [{ time, endTime, text }]` in absolute seconds. Word text must concatenate to the complete line and have finite, ordered intervals. Invalid words fall back to the line; hosts never estimate word timings from line duration.

@@ -22,7 +22,7 @@ final class OnboardingWindowController {
         window.hasShadow = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        window.title = "SuperIsland Setup"
+        window.title = L10n.string("SuperIsland Setup")
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.toolbar = nil

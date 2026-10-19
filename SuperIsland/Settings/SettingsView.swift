@@ -7,11 +7,11 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general:    "General"
-        case .modules:    "Modules"
-        case .appearance: "Appearance"
-        case .extensions: "Extensions"
-        case .advanced:   "Advanced"
+        case .general:    L10n.string("General")
+        case .modules:    L10n.string("Modules")
+        case .appearance: L10n.string("Appearance")
+        case .extensions: L10n.string("Extensions")
+        case .advanced:   L10n.string("Advanced")
         }
     }
 
@@ -151,7 +151,7 @@ struct SettingSectionLabel: View {
     let title: String
 
     var body: some View {
-        Text(title)
+        Text(L10n.string(title))
             .font(.system(size: 11))
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -194,9 +194,9 @@ struct SettingToggleRow: View {
     var body: some View {
         HStack(alignment: description != nil ? .top : .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13))
+                Text(L10n.string(title)).font(.system(size: 13))
                 if let desc = description {
-                    Text(desc)
+                    Text(L10n.string(desc))
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -260,10 +260,10 @@ struct SettingsCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+                Text(L10n.string(title))
                     .font(.system(size: 12, weight: .medium))
                 if let subtitle {
-                    Text(subtitle)
+                    Text(L10n.string(subtitle))
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }

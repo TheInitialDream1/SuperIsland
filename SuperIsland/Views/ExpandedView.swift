@@ -45,7 +45,8 @@ struct ExpandedView: View {
     }
 
     private var horizontalPadding: CGFloat {
-        appState.activeBuiltInModule == .nowPlaying ? 4 : 8
+        if appState.usesArtworkBackground { return 0 }
+        return appState.activeBuiltInModule == .nowPlaying ? 4 : 8
     }
 }
 
@@ -57,7 +58,7 @@ struct ModuleSummaryItem: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 18))
-            Text(label)
+            Text(L10n.string(label))
                 .font(.system(size: 9, weight: .medium))
         }
         .foregroundColor(.white.opacity(0.7))

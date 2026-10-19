@@ -11,7 +11,8 @@ enum ActiveModule: Equatable, Hashable {
         case .builtIn(let module):
             return module.displayName
         case .extension_(let id):
-            return ExtensionManager.shared.installed.first(where: { $0.id == id })?.name ?? id
+            let name = ExtensionManager.shared.installed.first(where: { $0.id == id })?.name ?? id
+            return L10n.string(name)
         }
     }
 

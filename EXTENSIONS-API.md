@@ -424,6 +424,8 @@ declare namespace SuperIsland {
       albumArtist: string | null;
       durationSeconds: number | null;
       elapsedSeconds: number | null;
+      playbackRate: number;
+      clockAuthoritative: boolean;
       artworkURL: string | null;
       playbackState: "playing" | "paused";
       trackIdentifier: string | null;
@@ -497,6 +499,63 @@ declare namespace SuperIsland {
       queued: boolean;
       error?: "permission_denied" | "main_thread_required" | "invalid_arguments" | "not_logged_in" | "bridge_not_ready";
     } | null;
+
+    /** Read normalized orders from the isolated read-only web bridge. */
+    function getLiveOrders(limit?: number): {
+      state: "idle" | "loading" | "needsLogin" | "connected" | "error";
+      statusText: string;
+      connected: boolean;
+      needsLogin: boolean;
+      lastSyncAt: number | null;
+      lastError: string | null;
+      orders: Array<{
+        id: string;
+        platform: "jd" | "meituan" | "cainiao";
+        platformName: string;
+        title: string;
+        status: string;
+        detail: string | null;
+        etaText: string | null;
+        imageURL: string | null;
+        detailURL: string | null;
+        progress: number;
+        isActive: boolean;
+        updatedAt: number;
+      }>;
+      platforms: Array<{
+        id: "jd" | "meituan" | "cainiao";
+        name: string;
+        state: "idle" | "loading" | "needsLogin" | "connected" | "error";
+        statusText: string;
+        connected: boolean;
+        needsLogin: boolean;
+        lastSyncAt: number | null;
+        lastError: string | null;
+        orderCount: number;
+        activeOrderCount: number;
+      }>;
+    } | null;
+
+    /** Start background order discovery without opening a login window. */
+    function startLiveOrders(): void;
+
+    /** Start one isolated order bridge without opening its login window. */
+    function startLiveOrderPlatform(platform: "jd" | "meituan" | "cainiao"): boolean;
+
+    /** Present the isolated JD sign-in and order window. */
+    function openLiveOrdersLogin(): void;
+
+    /** Present one platform's isolated sign-in and order window. */
+    function openLiveOrderPlatform(platform: "jd" | "meituan" | "cainiao"): boolean;
+
+    /** Refresh all connected order pages. */
+    function refreshLiveOrders(): void;
+
+    /** Refresh one connected platform order page. */
+    function refreshLiveOrderPlatform(platform: "jd" | "meituan" | "cainiao"): boolean;
+
+    /** Open one cached order in its isolated platform window. */
+    function openLiveOrder(orderID: string): boolean;
   }
 }
 
@@ -1547,3 +1606,5 @@ SuperIsland.registerModule({
 - App Store distribution (use our own store)
 - Paid extensions or monetization (all free for v1)
 - Node.js APIs (`fs`, `path`, `crypto`, etc.) — only the injected SuperIsland globals
+
+`View.nowPlayingLyrics` rows may optionally include `words: [{ time, endTime, text }]` in absolute seconds. Word text must concatenate to the complete line and have finite, ordered intervals. Invalid words fall back to the line; hosts never estimate word timings from line duration.

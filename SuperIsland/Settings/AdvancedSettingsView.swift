@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AdvancedSettingsView: View {
     @State private var showResetAlert = false
-    @State private var screenOptions: [ScreenDetector.ScreenOption] = ScreenDetector.availableScreenOptions()
     @ObservedObject private var updateChecker = UpdateChecker.shared
     @ObservedObject private var scheduler = ModuleRefreshScheduler.shared
     @EnvironmentObject var appState: AppState
@@ -13,28 +12,8 @@ struct AdvancedSettingsView: View {
             // ── Display ────────────────────────────────────────────────────
             SettingSectionLabel(title: "Display")
             SettingGroup {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Show island on").font(.system(size: 13))
-                        Text("Pick a specific display or let SuperIsland choose")
-                            .font(.system(size: 11)).foregroundColor(.secondary)
-                    }
-                    Spacer(minLength: 8)
-                    Picker("", selection: $appState.displayIdentifier) {
-                        ForEach(screenOptions) { option in
-                            Text(option.name).tag(option.id)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(maxWidth: 240)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
+                DisplayPickerRow()
             }
-            .onAppear { refreshScreenOptions() }
-            .onReceive(NotificationCenter.default.publisher(
-                for: NSApplication.didChangeScreenParametersNotification
-            )) { _ in refreshScreenOptions() }
 
             SettingSectionLabel(title: "Energy Diagnostics")
             SettingGroup {
@@ -195,13 +174,4 @@ struct AdvancedSettingsView: View {
         .padding(.vertical, 11)
     }
 
-    private func refreshScreenOptions() {
-        screenOptions = ScreenDetector.availableScreenOptions()
-        // If the stored display identifier no longer matches a connected
-        // screen (e.g. the user unplugged it), fall back to Automatic.
-        let currentID = appState.displayIdentifier
-        if !currentID.isEmpty, !screenOptions.contains(where: { $0.id == currentID }) {
-            appState.displayIdentifier = ""
-        }
-    }
 }

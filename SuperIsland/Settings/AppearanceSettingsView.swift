@@ -123,8 +123,8 @@ struct AppearanceSettingsView: View {
     ) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13))
-                Text(description)
+                Text(L10n.string(title)).font(.system(size: 13))
+                Text(L10n.string(description))
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             Spacer(minLength: 12)

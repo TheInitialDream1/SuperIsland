@@ -53,6 +53,12 @@ struct ModuleSettingsView: View {
                 SettingRowDivider()
                 SettingToggleRow(title: "Auto-open Shelf on Drop", isOn: $appState.shelfAutoOpenOnDrop)
                 SettingRowDivider()
+                SettingToggleRow(
+                    title: "AirDrop sharing",
+                    description: "Show the AirDrop panel and AirDrop actions in Shelf.",
+                    isOn: $appState.shelfAirDropEnabled
+                )
+                SettingRowDivider()
                 shelfRetentionRow
                 SettingRowDivider()
                 SettingToggleRow(title: "Connectivity", isOn: $appState.connectivityEnabled)
@@ -208,7 +214,7 @@ struct ModuleSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Word Tracking permissions")
                     .font(.system(size: 13))
-                Text(teleprompterPermissionDescription)
+                Text(L10n.string(teleprompterPermissionDescription))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -219,7 +225,7 @@ struct ModuleSettingsView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.green)
             } else {
-                Button(teleprompterPermissionButtonTitle) {
+                Button(L10n.string(teleprompterPermissionButtonTitle)) {
                     requestTeleprompterPermissions()
                 }
                 .font(.system(size: 12))
@@ -268,13 +274,13 @@ struct ModuleSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Calendar access")
                     .font(.system(size: 13))
-                Text(calendarPermissionDescription)
+                Text(L10n.string(calendarPermissionDescription))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 12)
-            Button(calendarPermissionButtonTitle) {
+            Button(L10n.string(calendarPermissionButtonTitle)) {
                 handleCalendarPermissionAction()
             }
             .font(.system(size: 12))
@@ -288,13 +294,13 @@ struct ModuleSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Permission")
                     .font(.system(size: 13))
-                Text(notificationPermissionDescription)
+                Text(L10n.string(notificationPermissionDescription))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 12)
-            Button(notificationPermissionButtonTitle) {
+            Button(L10n.string(notificationPermissionButtonTitle)) {
                 handleNotificationPermissionAction()
             }
             .font(.system(size: 12))
@@ -626,7 +632,7 @@ struct ModuleSettingsView: View {
 
     private func homeSlotRow(title: String, selection: Binding<String>) -> some View {
         HStack {
-            Text(title)
+            Text(L10n.string(title))
                 .font(.system(size: 13))
             Spacer(minLength: 12)
             Picker("", selection: selection) {
@@ -666,7 +672,7 @@ struct ModuleSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Detection test")
                     .font(.system(size: 13))
-                Text(browserDetectionMessage)
+                Text(L10n.string(browserDetectionMessage))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

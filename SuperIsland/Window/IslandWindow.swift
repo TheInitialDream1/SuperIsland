@@ -1,6 +1,7 @@
 import AppKit
 
 final class IslandPanel: NSPanel {
+    var interactiveRegion: IslandHitRegion?
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
     private static let showInScreenRecordingsDefaultsKey = "general.showInScreenRecordings"
@@ -50,5 +51,11 @@ final class IslandPanel: NSPanel {
 
     func setVisibleInScreenRecordings(_ visible: Bool) {
         sharingType = visible ? .readOnly : .none
+    }
+
+    func containsInteractivePoint(_ screenPoint: NSPoint) -> Bool {
+        guard frame.contains(screenPoint), let interactiveRegion else { return false }
+        let point = convertPoint(fromScreen: screenPoint)
+        return interactiveRegion.contains(CGPoint(x: point.x, y: frame.height - point.y))
     }
 }

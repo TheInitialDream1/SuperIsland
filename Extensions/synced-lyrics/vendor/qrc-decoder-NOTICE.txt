@@ -1,0 +1,10 @@
+qrc-decoder 1.0.2
+https://github.com/apoint123/qrc-decoder
+License: MIT. Copyright (c) 2025 apoint123.
+Port credits: SuJiKiNen/LyricDecoder.
+Local changes: removed encoding export; replaced TextEncoder/TextDecoder for JavaScriptCore; limited input/output size.
+
+pako 2.1.0
+https://github.com/nodeca/pako
+License: (MIT AND Zlib). See pako-LICENSE.txt and its source header.
+Registry tarball SHA-1: 266cc37f98c7d883545d11335c00fbd4062c9a86

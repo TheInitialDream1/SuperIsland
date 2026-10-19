@@ -58,6 +58,8 @@ enum TextStyle: String {
     case largeTitle
     case title
     case subtitle
+    case lyric
+    case lyricActive
     case headline
     case body
     case caption
@@ -73,6 +75,10 @@ enum TextStyle: String {
             return .system(size: 16, weight: .semibold)
         case .subtitle:
             return .system(size: 13, weight: .medium)
+        case .lyric:
+            return .system(size: 12, weight: .medium)
+        case .lyricActive:
+            return .system(size: 22, weight: .bold)
         case .headline:
             return .system(size: 14, weight: .semibold)
         case .body:
@@ -110,6 +116,11 @@ indirect enum ViewNode: Equatable {
     case inputBox(id: String, placeholder: String, text: String, actionID: String, autoFocus: Bool, minHeight: Double, showsEmojiButton: Bool)
     case toggle(isOn: Bool, label: String, actionID: String)
     case slider(value: Double, min: Double, max: Double, actionID: String)
+    case nowPlayingLyrics(content: NowPlayingLyricsContent)
+    case nowPlayingPlayer(artworkSize: Double, showArtwork: Bool)
+    case nowPlayingArtwork(size: Double, cornerRadius: Double)
+    case nowPlayingTransport(showProgress: Bool)
+    case nowPlayingBackdrop(child: ViewNode)
 
     case padding(child: ViewNode, edges: String, amount: Double)
     case frame(child: ViewNode, width: Double?, height: Double?, maxWidth: Double?, maxHeight: Double?, alignment: String)
@@ -276,6 +287,77 @@ indirect enum ViewNode: Equatable {
                 min: value.forProperty("min")?.toDouble() ?? 0,
                 max: value.forProperty("max")?.toDouble() ?? 1,
                 actionID: value.forProperty("action")?.toString() ?? ""
+            )
+
+        case "now-playing-lyrics":
+            let rawLines = value.forProperty("lines")?.toArray() as? [[String: Any]] ?? []
+            let lines = rawLines.prefix(2000).compactMap { row -> SyncedLyricLine? in
+                guard let time = row["time"] as? Double, time.isFinite, time >= 0,
+                      let text = row["text"] as? String else { return nil }
+                let rawWords = row["words"] as? [[String: Any]] ?? []
+                let words = rawWords.prefix(500).compactMap { word -> SyncedLyricWord? in
+                    guard let start = word["time"] as? Double, start.isFinite, start >= time,
+                          let end = word["endTime"] as? Double, end.isFinite, end >= start,
+                          let value = word["text"] as? String, !value.isEmpty else { return nil }
+                    return SyncedLyricWord(time: start, endTime: end, text: value)
+                }
+                let valid = words.count == rawWords.count && words.map(\.text).joined() == text
+                    && zip(words, words.dropFirst()).allSatisfy { $0.0.time <= $0.1.time }
+                return SyncedLyricLine(time: time, text: text, words: valid ? words : [])
+            }.sorted { $0.time < $1.time }
+            let rawOffset = propertyDouble(value, key: "offsetSeconds") ?? 0
+            return .nowPlayingLyrics(content: NowPlayingLyricsContent(
+                lines: lines,
+                status: value.forProperty("status")?.isString == true
+                    ? (value.forProperty("status")?.toString() ?? "idle") : "idle",
+                message: value.forProperty("message")?.isString == true
+                    ? (value.forProperty("message")?.toString() ?? "") : "",
+                offsetSeconds: rawOffset.isFinite ? min(15, max(-15, rawOffset)) : 0,
+                lyricSource: value.forProperty("lyricSource")?.isString == true
+                    ? (value.forProperty("lyricSource")?.toString() ?? "") : "",
+                canCalibrate: value.forProperty("canCalibrate")?.isBoolean == true
+                    ? (value.forProperty("canCalibrate")?.toBool() ?? false) : false,
+                showArtwork: value.forProperty("showArtwork")?.isBoolean == true
+                    ? (value.forProperty("showArtwork")?.toBool() ?? true) : true,
+                trackTitle: value.forProperty("trackTitle")?.isString == true
+                    ? (value.forProperty("trackTitle")?.toString() ?? "") : "",
+                trackArtist: value.forProperty("trackArtist")?.isString == true
+                    ? (value.forProperty("trackArtist")?.toString() ?? "") : "",
+                sourceBundleIdentifier: value.forProperty("sourceBundleIdentifier")?.isString == true
+                    ? (value.forProperty("sourceBundleIdentifier")?.toString() ?? "") : ""
+            ))
+
+        case "now-playing-player":
+            let artworkSizeValue = value.forProperty("artworkSize")
+            let requestedArtworkSize = artworkSizeValue?.isNumber == true
+                ? (artworkSizeValue?.toDouble() ?? 54)
+                : 54
+            let artworkSize = requestedArtworkSize.isFinite ? requestedArtworkSize : 54
+            return .nowPlayingPlayer(
+                artworkSize: min(max(artworkSize, 36), 78),
+                showArtwork: value.forProperty("showArtwork")?.isBoolean == true
+                    ? (value.forProperty("showArtwork")?.toBool() ?? true)
+                    : true
+            )
+
+        case "now-playing-artwork":
+            let size = propertyDouble(value, key: "size") ?? 78
+            let radius = propertyDouble(value, key: "cornerRadius") ?? 12
+            return .nowPlayingArtwork(
+                size: min(max(size, 36), 180),
+                cornerRadius: min(max(radius, 0), 32)
+            )
+
+        case "now-playing-transport":
+            return .nowPlayingTransport(
+                showProgress: value.forProperty("showProgress")?.isBoolean == true
+                    ? (value.forProperty("showProgress")?.toBool() ?? true)
+                    : true
+            )
+
+        case "now-playing-backdrop":
+            return .nowPlayingBackdrop(
+                child: ViewNode.from(value.forProperty("child")) ?? .empty
             )
 
         case "padding":

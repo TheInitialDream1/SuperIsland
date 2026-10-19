@@ -33,22 +33,37 @@ final class IslandWindowController {
     private var cancellables = Set<AnyCancellable>()
     private var shrinkWorkItem: DispatchWorkItem?
     private var isShowing = false
+    private var inputRegionUpdatePending = false
+    private lazy var mouseRouter = IslandMouseEventRouter(
+        panels: { [weak self] in
+            guard let self else { return [] }
+            return Array(self.panels.values)
+        },
+        hoverChanged: { [weak self] hovering in
+            guard let self, self.appState.isHovering != hovering else { return }
+            self.appState.handleHoverChange(hovering)
+        }
+    )
 
     func showIsland() {
         isShowing = true
         syncPanels(display: true)
+        mouseRouter.start()
 
         setupDidChangeStateHook()
         observeScreenChanges()
         observeSettingsChanges()
         observeStateChanges()
         observeCompactLayoutChanges()
+        observeExtensionContentHeightChanges()
         observeFullscreenChanges()
+        observeInputRegionChanges()
         updateFullscreenVisibility()
     }
 
     func hideIsland() {
         isShowing = false
+        mouseRouter.stop()
         for panel in panels.values {
             panel.orderOut(nil)
         }
@@ -132,10 +147,9 @@ final class IslandWindowController {
             return [chosen]
         }
 
-        // Automatic: cursor screen → primary → first connected.
-        let fallback = ScreenDetector.activeScreen
-            ?? ScreenDetector.primaryScreen
-            ?? NSScreen.screens.first
+        // Keep the selected ID when unplugged. Reconnecting restores that screen.
+        // Neither focus changes nor cursor movement may choose a new target.
+        let fallback = ScreenDetector.primaryScreen
         return fallback.map { [$0] } ?? []
     }
 
@@ -161,9 +175,18 @@ final class IslandWindowController {
     private var maxWindowSize: CGSize {
         let full = appState.windowSize(for: .fullExpanded)
         let expanded = appState.windowSize(for: .expanded)
+        // Extensions can become active after the hosting view is created. Reserve
+        // their maximum height up front; the panel still clips to the actual
+        // content size, so compact windows do not gain an invisible hit area.
+        let fullChromeHeight = full.height - appState.contentSize(for: .fullExpanded).height
+        let inlineToolbarHeight: CGFloat = appState.usesOutwardTopCorners && !appState.presentationHasNotch ? 50 : 0
+        let maximumContentHeight = max(Constants.fullExpandedSize.height, Constants.extensionMaximumFullExpandedHeight)
         return CGSize(
-            width: max(full.width, expanded.width),
-            height: max(full.height, expanded.height)
+            // The fixed hosting view must also fit optional cycler buttons if
+            // the setting is enabled after this view has been created.
+            width: max(appState.size(for: .fullExpanded).width,
+                       appState.size(for: .expanded).width) + Constants.moduleCyclerGutterWidth * 2,
+            height: max(maximumContentHeight + inlineToolbarHeight + fullChromeHeight, expanded.height)
         )
     }
 
@@ -185,6 +208,8 @@ final class IslandWindowController {
         let x = anchorX - size.width / 2
         let y = anchorY - size.height
         panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: display)
+        updateInputRegion(for: panel)
+        mouseRouter.refresh()
     }
 
     /// Apply the given size to every active panel, each sized against its own screen.
@@ -193,6 +218,41 @@ final class IslandWindowController {
             guard let screen = ScreenDetector.screen(withIDString: id) else { continue }
             applyFrame(size: size, to: panel, screen: screen, display: display)
         }
+    }
+
+    private func updateInputRegion(for panel: IslandPanel) {
+        let surfaceSize = appState.currentSize
+        let surfaceFrame = CGRect(x: (panel.frame.width - surfaceSize.width) / 2,
+                                  y: 0, width: surfaceSize.width, height: surfaceSize.height)
+        var buttons: [CGRect] = []
+        if appState.showsModuleCycler {
+            let buttonSize = Constants.moduleCyclerButtonSize
+            let overlayWidth = appState.windowSize.width
+            let left = (panel.frame.width - overlayWidth) / 2
+                + (Constants.moduleCyclerGutterWidth - buttonSize) / 2
+            let top = (appState.currentContentFrameHeight + appState.currentContentTopInset - buttonSize) / 2
+            buttons = [
+                CGRect(x: left, y: top, width: buttonSize, height: buttonSize),
+                CGRect(x: panel.frame.width - left - buttonSize, y: top,
+                       width: buttonSize, height: buttonSize)
+            ]
+        }
+        panel.interactiveRegion = IslandHitRegion(surfaceFrame: surfaceFrame,
+                                                  shape: appState.currentIslandShape,
+                                                  cycleButtonFrames: buttons)
+    }
+
+    private func observeInputRegionChanges() {
+        appState.objectWillChange.sink { [weak self] _ in
+            guard let self, !self.inputRegionUpdatePending else { return }
+            self.inputRegionUpdatePending = true
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.inputRegionUpdatePending = false
+                for panel in self.panels.values { self.updateInputRegion(for: panel) }
+                self.mouseRouter.refresh()
+            }
+        }.store(in: &cancellables)
     }
 
     // MARK: - Window resize via didSet hook
@@ -219,8 +279,8 @@ final class IslandWindowController {
                     panel.contentView?.subviews.forEach { $0.updateTrackingAreas() }
                 }
             }
-            // SHRINKING: keep window large during animation.
-            // It's snapped to compact in observeStateChanges after 0.55s.
+            // Keep the viewport during animation; every state settles to its
+            // actual size in observeStateChanges, including expanded states.
         }
     }
 
@@ -236,52 +296,37 @@ final class IslandWindowController {
                 self.shrinkWorkItem?.cancel()
                 self.shrinkWorkItem = nil
 
+                let expectedState = newState
+                let animationDuration = self.appState.shouldReduceMotion
+                    ? 0.14 : 0.5 / max(0.5, self.appState.animationSpeed)
+                let settleDelay: TimeInterval
                 switch newState {
                 case .expanded, .fullExpanded:
                     self.appState.suppressDismissScheduling = true
                     self.appState.cancelAutoDismiss()
                     self.appState.cancelFullExpandedDismiss()
 
-                    // After the animation settles, re-enable dismiss and
-                    // schedule it if the user isn't hovering. The 0.8s
-                    // delay gives tracking areas time to stabilize after
-                    // the window resize.
-                    let expectedState = newState
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-                        guard let self else { return }
-                        self.appState.suppressDismissScheduling = false
-
-                        // Refresh tracking areas so hover state is accurate.
-                        for panel in self.panels.values {
-                            panel.contentView?.subviews.forEach { $0.updateTrackingAreas() }
-                        }
-
-                        guard self.appState.currentState == expectedState,
-                              !self.appState.isHovering else { return }
-                        if expectedState == .expanded {
-                            self.appState.scheduleAutoDismiss()
-                        } else {
-                            self.appState.scheduleFullExpandedDismiss()
-                        }
-                    }
+                    settleDelay = max(0.8, animationDuration + 0.3)
 
                 case .compact:
                     self.appState.suppressDismissScheduling = false
-                    // Shrink window AFTER the animation finishes.
-                    // This releases the expanded click area.
-                    let work = DispatchWorkItem { [weak self] in
-                        guard let self,
-                              self.appState.currentState == .compact else { return }
-                        self.applyFrameToAll(size: self.appState.windowSize)
-                        // Force tracking area recalculation so the next
-                        // hover on the compact notch is detected.
-                        for panel in self.panels.values {
-                            panel.contentView?.subviews.forEach { $0.updateTrackingAreas() }
-                        }
-                    }
-                    self.shrinkWorkItem = work
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: work)
+                    settleDelay = max(0.55, animationDuration + 0.05)
                 }
+
+                let work = DispatchWorkItem { [weak self] in
+                    guard let self, self.appState.currentState == expectedState else { return }
+                    self.shrinkWorkItem = nil
+                    self.applyFrameToAll(size: self.appState.windowSize)
+                    self.appState.suppressDismissScheduling = false
+                    for panel in self.panels.values {
+                        panel.contentView?.subviews.forEach { $0.updateTrackingAreas() }
+                    }
+                    guard !self.appState.isHovering else { return }
+                    if expectedState == .expanded { self.appState.scheduleAutoDismiss() }
+                    if expectedState == .fullExpanded { self.appState.scheduleFullExpandedDismiss() }
+                }
+                self.shrinkWorkItem = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + settleDelay, execute: work)
             }
             .store(in: &cancellables)
     }
@@ -293,7 +338,7 @@ final class IslandWindowController {
             .removeDuplicates()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.updateCompactFrameIfNeeded()
+                self?.updateFrameForCurrentContent()
             }
             .store(in: &cancellables)
 
@@ -307,7 +352,33 @@ final class IslandWindowController {
     }
 
     private func updateCompactFrameIfNeeded() {
-        guard appState.currentState == .compact else { return }
+        guard appState.currentState == .compact, shrinkWorkItem == nil else { return }
+        applyFrameToAll(size: appState.windowSize)
+    }
+
+    private func observeExtensionContentHeightChanges() {
+        appState.$fullExpandedSelectedTab
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFrameForCurrentContent()
+            }
+            .store(in: &cancellables)
+
+        ExtensionManager.shared.$runtimeHeightPreferences
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFrameForCurrentContent()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateFrameForCurrentContent() {
+        guard !panels.isEmpty else { return }
+        // A tab/height notification during an expand or collapse must not clip
+        // the in-flight animation. The pending settle reads the latest size.
+        guard shrinkWorkItem == nil else { return }
         applyFrameToAll(size: appState.windowSize)
     }
 
@@ -324,9 +395,7 @@ final class IslandWindowController {
                 // Screen topology may have changed (display added/removed) —
                 // reconcile the panel set, then re-apply sizes.
                 self.syncPanels(display: true)
-                let size = self.appState.currentState == .compact
-                    ? self.appState.windowSize : self.maxWindowSize
-                self.applyFrameToAll(size: size)
+                self.applyFrameToAll(size: self.appState.windowSize)
             }
         }
     }

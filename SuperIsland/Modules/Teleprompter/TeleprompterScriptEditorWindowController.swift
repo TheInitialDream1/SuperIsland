@@ -16,7 +16,7 @@ final class TeleprompterScriptEditorWindowController {
         let hostingController = NSHostingController(rootView: rootView)
 
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "Teleprompter Script"
+        window.title = L10n.string("Teleprompter Script")
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.setContentSize(NSSize(width: 560, height: 460))
         window.minSize = NSSize(width: 400, height: 340)

@@ -1,0 +1,76 @@
+{
+  "sections": [
+    {
+      "title": "显示",
+      "fields": [
+        {
+          "type": "toggle",
+          "key": "showArtwork",
+          "label": "显示专辑封面",
+          "default": true,
+          "description": "在展开视图中显示当前歌曲封面。"
+        },
+        {
+          "type": "toggle",
+          "key": "foregroundWhilePlaying",
+          "label": "播放时将歌词岛置前",
+          "default": true,
+          "description": "匹配到同步歌词后，将歌词扩展作为当前灵动岛内容。关闭后仅保留在扩展槽中。"
+        },
+        {
+          "type": "toggle",
+          "key": "simplifiedChinese",
+          "label": "歌词转为简体",
+          "default": true,
+          "description": "使用本地 OpenCC 转换，保留原歌词时间轴。"
+        },
+        {
+          "type": "toggle",
+          "key": "autoRevealOnTrackChange",
+          "label": "切歌时短暂展开",
+          "default": false,
+          "description": "匹配到新歌曲歌词后自动展开一次灵动岛。"
+        },
+        {
+          "type": "slider",
+          "key": "windowHeight",
+          "label": "完整展开高度",
+          "default": 240,
+          "min": 200,
+          "max": 300,
+          "step": 10,
+          "description": "小封面、多行歌词和播放控制的窗口高度。"
+        }
+      ]
+    },
+    {
+      "title": "同步",
+      "fields": [
+        {
+          "type": "slider",
+          "key": "globalOffsetSeconds",
+          "label": "全局歌词偏移（秒）",
+          "default": 0,
+          "min": -3,
+          "max": 3,
+          "step": 0.1,
+          "description": "正值让歌词提前出现，负值让歌词延后出现。点击歌词可跳转到对应播放位置。"
+        },
+        {
+          "type": "toggle",
+          "key": "cleanVideoTitles",
+          "label": "清理视频标题",
+          "default": true,
+          "description": "匹配时移除 Official Video、MV、Lyrics 等常见后缀。"
+        },
+        {
+          "type": "toggle",
+          "key": "cacheLyrics",
+          "label": "缓存最近歌词",
+          "default": true,
+          "description": "缓存最近 16 首歌曲，减少重复网络请求。"
+        }
+      ]
+    }
+  ]
+}

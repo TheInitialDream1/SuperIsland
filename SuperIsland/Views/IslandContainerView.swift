@@ -2,6 +2,8 @@ import SwiftUI
 
 struct IslandContainerView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var player = NowPlayingManager.shared
+    @AppStorage("lyrics.nativeVisualStyle") private var nativeLyricStyle = NativeLyricStyle.luminous.rawValue
     @State private var isHoveringIslandSurface = false
     @State private var isHoveringPreviousButton = false
     @State private var isHoveringNextButton = false
@@ -10,9 +12,8 @@ struct IslandContainerView: View {
     private static let hoverValidationTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        // No GeometryReader — just like NotchDrop. The surface sizes
-        // itself from appState. Transparent areas around the surface
-        // are truly empty (alpha=0), so macOS passes clicks through.
+        // The fixed hosting view keeps animations centered. Native window
+        // routing excludes the surrounding viewport and shadows from clicks.
         ZStack(alignment: .top) {
             islandSurface
 
@@ -39,8 +40,22 @@ struct IslandContainerView: View {
 
     private var islandSurface: some View {
         let surfaceSize = appState.currentSize
+        let contentSideInset = max(0, (surfaceSize.width - appState.currentContentSize.width) / 2)
+        // Outward corners inset the visible side walls. Non-notched layouts
+        // already compensate by widening the surface around the content.
+        let lyricsSideInsets = EdgeInsets(
+            top: 0,
+            leading: appState.usesOutwardTopCorners
+                ? max(0, appState.currentTopLeadingCornerRadius - contentSideInset) : 0,
+            bottom: 0,
+            trailing: appState.usesOutwardTopCorners
+                ? max(0, appState.currentTopTrailingCornerRadius - contentSideInset) : 0
+        )
         return ZStack(alignment: .top) {
-            islandShape
+            if appState.usesArtworkBackground {
+                NativeLyricsBackdropHost(style: .resolve(nativeLyricStyle))
+            } else {
+                islandShape
                 .fill(
                     LinearGradient(
                         colors: [
@@ -51,11 +66,14 @@ struct IslandContainerView: View {
                         endPoint: .bottom
                     )
                 )
+            }
 
             islandContent
                 .frame(width: surfaceSize.width, height: surfaceSize.height, alignment: .top)
         }
         .frame(width: surfaceSize.width, height: surfaceSize.height)
+        .environment(\.lyricsUsesIslandBackground, appState.usesArtworkBackground)
+        .environment(\.lyricsSurfaceSideInsets, lyricsSideInsets)
         .clipShape(islandShape)
         .compositingGroup()
         .shadow(
@@ -77,7 +95,7 @@ struct IslandContainerView: View {
         }
         .contentShape(islandShape)
         .modifier(IslandSurfaceSwipeModifier(
-            enabled: appState.islandSurfaceSwipeEnabled,
+            enabled: appState.islandSurfaceSwipeEnabled && player.seekPreviewTime == nil,
             isCompact: appState.currentState == .compact,
             onTrackpad: { handleHorizontalSwipe($0) },
             onDragEnded: { handleSwipe(value: $0) }
@@ -85,14 +103,15 @@ struct IslandContainerView: View {
         .onContinuousHover(coordinateSpace: .local) { phase in
             handleSurfaceHover(phase: phase)
         }
-        .onTapGesture {
-            handleSurfaceTap()
-        }
+        .gesture(TapGesture().onEnded { handleSurfaceTap() },
+                 including: player.seekPreviewTime == nil ? .all : .subviews)
         .gesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
+                    guard !player.isInteractingWithPlaybackProgress else { return }
                     AppDelegate.showSettingsWindow()
-                }
+                },
+            including: player.seekPreviewTime == nil ? .all : .subviews
         )
         .onDrop(of: ShelfStore.acceptedDropTypes, isTargeted: $isShelfDropTargeted) { providers in
             guard appState.shelfEnabled else { return false }
@@ -125,16 +144,7 @@ struct IslandContainerView: View {
     // MARK: - Shape
 
     private var islandShape: PillShape {
-        PillShape(
-            topLeadingRadius: appState.currentTopLeadingCornerRadius,
-            topTrailingRadius: appState.currentTopTrailingCornerRadius,
-            bottomLeadingRadius: appState.currentBottomLeadingCornerRadius,
-            bottomTrailingRadius: appState.currentBottomTrailingCornerRadius,
-            outwardTopCorners: appState.usesOutwardTopCorners,
-            topCutoutWidth: appState.currentTopCutoutWidth,
-            topCutoutDepth: appState.currentTopCutoutDepth,
-            topCutoutCornerRadius: appState.currentTopCutoutCornerRadius
-        )
+        appState.currentIslandShape
     }
 
     // MARK: - Appearance
@@ -155,7 +165,7 @@ struct IslandContainerView: View {
     // captured by the panel's hit test and blocks clicks from reaching apps
     // underneath (see issue #1).
     private var ambientShadowOpacity: Double {
-        appState.currentState == .compact ? 0.0 : 0.38
+        appState.currentState == .compact ? 0.0 : (appState.usesArtworkBackground ? 0.18 : 0.38)
     }
 
     private var ambientShadowRadius: CGFloat {
@@ -167,7 +177,7 @@ struct IslandContainerView: View {
     }
 
     private var keyShadowOpacity: Double {
-        appState.currentState == .compact ? 0.0 : 0.58
+        appState.currentState == .compact || appState.usesArtworkBackground ? 0.0 : 0.58
     }
 
     private var keyShadowRadius: CGFloat {
@@ -237,6 +247,7 @@ struct IslandContainerView: View {
     // MARK: - Gestures
 
     private func handleSwipe(value: DragGesture.Value) {
+        guard !player.isInteractingWithPlaybackProgress else { return }
         let horizontal = value.translation.width
         let vertical = value.translation.height
         let velocity = sqrt(pow(value.velocity.width, 2) + pow(value.velocity.height, 2))
@@ -259,6 +270,7 @@ struct IslandContainerView: View {
     }
 
     private func handleHorizontalSwipe(_ direction: SwipeDirection) {
+        guard !player.isInteractingWithPlaybackProgress else { return }
         if appState.currentState == .expanded && appState.activeBuiltInModule == .nowPlaying {
             NowPlayingManager.shared.skipTrack(forward: direction == .left)
         } else {
@@ -267,6 +279,7 @@ struct IslandContainerView: View {
     }
 
     private func handleSurfaceTap() {
+        guard !player.isInteractingWithPlaybackProgress else { return }
         if handleNotificationTapIfNeeded() {
             return
         }
@@ -324,11 +337,7 @@ struct IslandContainerView: View {
     // MARK: - Module Cycler
 
     private var showModuleCycler: Bool {
-        appState.currentState != .compact && enabledModuleCount > 1
-    }
-
-    private var enabledModuleCount: Int {
-        appState.availableModules.count
+        appState.showsModuleCycler
     }
 
     private var moduleCyclerOverlay: some View {
@@ -416,7 +425,9 @@ struct IslandContainerView: View {
 
         let pointerLocation = NSEvent.mouseLocation
         // Multi-display: hover is valid if the pointer is over ANY island.
-        guard !islandPanels.contains(where: { $0.frame.contains(pointerLocation) }) else { return }
+        guard !islandPanels.contains(where: {
+            $0.isVisible && $0.containsInteractivePoint(pointerLocation)
+        }) else { return }
 
         isHoveringIslandSurface = false
         isHoveringPreviousButton = false
@@ -431,22 +442,19 @@ private struct IslandSurfaceSwipeModifier: ViewModifier {
     let onTrackpad: (SwipeDirection) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
-    @ViewBuilder
     func body(content: Content) -> some View {
-        if enabled {
-            content
+        content
                 .onTrackpadSwipe { direction in
-                    guard !isCompact else { return }
+                    guard enabled, !isCompact else { return }
                     onTrackpad(direction)
                 }
                 .gesture(
                     DragGesture(minimumDistance: 8)
                         .onEnded { value in
+                            guard enabled else { return }
                             onDragEnded(value)
-                        }
+                        },
+                    including: enabled ? .all : .subviews
                 )
-        } else {
-            content
-        }
     }
 }

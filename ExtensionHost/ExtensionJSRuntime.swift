@@ -293,8 +293,34 @@ final class ExtensionJSRuntime {
             }
         }
 
+        let setPreferredHeight: @convention(block) (JSValue) -> Void = { [weak self] value in
+            guard let self else { return }
+
+            let expanded: Double?
+            let fullExpanded: Double?
+            if value.isNumber {
+                expanded = nil
+                fullExpanded = value.toDouble()
+            } else {
+                let expandedValue = value.forProperty("expanded")
+                let fullExpandedValue = value.forProperty("fullExpanded")
+                expanded = expandedValue?.isNumber == true ? expandedValue?.toDouble() : nil
+                fullExpanded = fullExpandedValue?.isNumber == true ? fullExpandedValue?.toDouble() : nil
+            }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.manager?.setPreferredHeights(
+                    extensionID: self.extensionID,
+                    expanded: expanded,
+                    fullExpanded: fullExpanded
+                )
+            }
+        }
+
         island.setObject(activate, forKeyedSubscript: "activate" as NSString)
         island.setObject(dismiss, forKeyedSubscript: "dismiss" as NSString)
+        island.setObject(setPreferredHeight, forKeyedSubscript: "setPreferredHeight" as NSString)
         island.setObject("compact", forKeyedSubscript: "state" as NSString)
         island.setObject(false, forKeyedSubscript: "isActive" as NSString)
 
@@ -372,9 +398,14 @@ final class ExtensionJSRuntime {
                     headers: headers,
                     hasPermission: hasPermission
                 )
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
                     let js = JSValue(object: result.asDictionary(), in: ctx) ?? JSValue(nullIn: ctx)
                     callback.call(withArguments: [js as Any])
+                    // Lyrics are interactive media state. A completed document
+                    // must not wait for the low-power extension refresh interval.
+                    if let self, self.extensionID == "com.wangxulong.superisland.synced-lyrics" {
+                        self.manager?.scheduleImmediateRefresh(extensionID: self.extensionID)
+                    }
                 }
             }
         }
@@ -537,6 +568,90 @@ final class ExtensionJSRuntime {
             return true
         }
 
+        let getLiveOrders: @convention(block) (JSValue?) -> JSValue? = { [weak self] limitArg in
+            guard let self else { return JSValue(nullIn: JSContext.current()) }
+            guard self.manifest.permissions.contains("network") else {
+                return JSValue(object: NSNull(), in: self.context)
+            }
+            guard Thread.isMainThread else {
+                return JSValue(object: NSNull(), in: self.context)
+            }
+
+            var limit = 10
+            if let limitArg, !limitArg.isUndefined, !limitArg.isNull {
+                let candidate = Int(limitArg.toInt32())
+                if candidate > 0 { limit = candidate }
+            }
+            limit = max(1, min(50, limit))
+
+            let payload = MainActor.assumeIsolated {
+                OrderWebBridge.shared.snapshot(limit: limit)
+            }
+            return JSValue(object: payload, in: self.context)
+        }
+
+        let startLiveOrders: @convention(block) () -> Void = { [weak self] in
+            guard let self, self.manifest.permissions.contains("network") else { return }
+            Task { @MainActor in
+                OrderWebBridge.shared.start()
+            }
+        }
+
+        let startLiveOrderPlatform: @convention(block) (String) -> Bool = { [weak self] platformID in
+            guard let self, self.manifest.permissions.contains("network"),
+                  let platform = LiveOrderPlatform(rawValue: platformID.lowercased()) else {
+                return false
+            }
+            Task { @MainActor in
+                OrderWebBridge.shared.start(platform: platform)
+            }
+            return true
+        }
+
+        let openLiveOrdersLogin: @convention(block) () -> Void = { [weak self] in
+            guard let self, self.manifest.permissions.contains("network") else { return }
+            Task { @MainActor in
+                OrderWebBridge.shared.openLogin()
+            }
+        }
+
+        let openLiveOrderPlatform: @convention(block) (String) -> Bool = { [weak self] platformID in
+            guard let self, self.manifest.permissions.contains("network"),
+                  let platform = LiveOrderPlatform(rawValue: platformID.lowercased()) else {
+                return false
+            }
+            Task { @MainActor in
+                OrderWebBridge.shared.openLogin(platform: platform)
+            }
+            return true
+        }
+
+        let refreshLiveOrders: @convention(block) () -> Void = { [weak self] in
+            guard let self, self.manifest.permissions.contains("network") else { return }
+            Task { @MainActor in
+                OrderWebBridge.shared.refresh(showLoginWindow: false)
+            }
+        }
+
+        let refreshLiveOrderPlatform: @convention(block) (String) -> Bool = { [weak self] platformID in
+            guard let self, self.manifest.permissions.contains("network"),
+                  let platform = LiveOrderPlatform(rawValue: platformID.lowercased()) else {
+                return false
+            }
+            Task { @MainActor in
+                OrderWebBridge.shared.refresh(platform: platform, showLoginWindow: false)
+            }
+            return true
+        }
+
+        let openLiveOrder: @convention(block) (String) -> Bool = { [weak self] orderID in
+            guard let self, self.manifest.permissions.contains("network") else { return false }
+            guard Thread.isMainThread else { return false }
+            return MainActor.assumeIsolated {
+                OrderWebBridge.shared.openOrder(id: orderID)
+            }
+        }
+
         let dismissNotification: @convention(block) (String) -> Bool = { sourceID in
             let normalizedSourceID = sourceID.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !normalizedSourceID.isEmpty else { return false }
@@ -562,6 +677,14 @@ final class ExtensionJSRuntime {
         system.setObject(refreshWhatsAppWebQR, forKeyedSubscript: "refreshWhatsAppWebQR" as NSString)
         system.setObject(sendWhatsAppWebMessage, forKeyedSubscript: "sendWhatsAppWebMessage" as NSString)
         system.setObject(sendWhatsAppWebMessageAsync, forKeyedSubscript: "sendWhatsAppWebMessageAsync" as NSString)
+        system.setObject(getLiveOrders, forKeyedSubscript: "getLiveOrders" as NSString)
+        system.setObject(startLiveOrders, forKeyedSubscript: "startLiveOrders" as NSString)
+        system.setObject(startLiveOrderPlatform, forKeyedSubscript: "startLiveOrderPlatform" as NSString)
+        system.setObject(openLiveOrdersLogin, forKeyedSubscript: "openLiveOrdersLogin" as NSString)
+        system.setObject(openLiveOrderPlatform, forKeyedSubscript: "openLiveOrderPlatform" as NSString)
+        system.setObject(refreshLiveOrders, forKeyedSubscript: "refreshLiveOrders" as NSString)
+        system.setObject(refreshLiveOrderPlatform, forKeyedSubscript: "refreshLiveOrderPlatform" as NSString)
+        system.setObject(openLiveOrder, forKeyedSubscript: "openLiveOrder" as NSString)
         system.setObject(dismissNotification, forKeyedSubscript: "dismissNotification" as NSString)
         system.setObject(closePresentedInteraction, forKeyedSubscript: "closePresentedInteraction" as NSString)
         superIsland.setObject(system, forKeyedSubscript: "system" as NSString)
@@ -707,6 +830,11 @@ final class ExtensionJSRuntime {
               gauge: function(value, opts) { return { type: 'gauge', value: value, min: (opts && opts.min) ?? 0, max: (opts && opts.max) ?? 1, label: opts && opts.label }; },
               divider: function() { return { type: 'divider' }; },
               button: function(label, action) { return { type: 'button', label: label, action: action }; },
+              nowPlayingLyrics: function(opts) { opts = opts || {}; return { type: 'now-playing-lyrics', lines: opts.lines || [], status: opts.status || 'idle', message: opts.message || '', offsetSeconds: opts.offsetSeconds, lyricSource: opts.lyricSource || '', canCalibrate: opts.canCalibrate === true, showArtwork: opts.showArtwork !== false, trackTitle: opts.trackTitle || '', trackArtist: opts.trackArtist || '', sourceBundleIdentifier: opts.sourceBundleIdentifier || '' }; },
+              nowPlayingPlayer: function(opts) { return { type: 'now-playing-player', artworkSize: (opts && opts.artworkSize) ?? 54, showArtwork: opts && opts.showArtwork !== undefined ? !!opts.showArtwork : true }; },
+              nowPlayingArtwork: function(opts) { return { type: 'now-playing-artwork', size: (opts && opts.size) ?? 78, cornerRadius: (opts && opts.cornerRadius) ?? 12 }; },
+              nowPlayingTransport: function(opts) { return { type: 'now-playing-transport', showProgress: !opts || opts.showProgress !== false }; },
+              nowPlayingBackdrop: function(child) { return { type: 'now-playing-backdrop', child: child }; },
               inputBox: function(placeholder, text, action, opts) { return { type: 'input-box', id: (opts && opts.id) ? String(opts.id) : '', placeholder: String(placeholder ?? ''), text: String(text ?? ''), action: action, autoFocus: opts && opts.autoFocus !== undefined ? !!opts.autoFocus : true, minHeight: (opts && opts.minHeight) ? Number(opts.minHeight) : 72, showsEmojiButton: opts && opts.showsEmojiButton !== undefined ? !!opts.showsEmojiButton : false }; },
               toggle: function(isOn, label, action) { return { type: 'toggle', isOn: !!isOn, label: label, action: action }; },
               slider: function(value, min, max, action) { return { type: 'slider', value: value, min: min, max: max, action: action }; },

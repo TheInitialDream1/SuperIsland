@@ -40,12 +40,12 @@ final class EnergySuggestionPresenter {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             let alert = NSAlert()
-            alert.messageText = "Use Low Power mode?"
-            alert.informativeText = reason.message
+            alert.messageText = L10n.string("Use Low Power mode?")
+            alert.informativeText = L10n.string(reason.message)
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "Enable Low Power")
-            alert.addButton(withTitle: "Not Now")
-            alert.addButton(withTitle: "Do Not Ask Again")
+            alert.addButton(withTitle: L10n.string("Enable Low Power"))
+            alert.addButton(withTitle: L10n.string("Not Now"))
+            alert.addButton(withTitle: L10n.string("Do Not Ask Again"))
 
             let response = alert.runModal()
             switch response {

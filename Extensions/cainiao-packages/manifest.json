@@ -1,0 +1,28 @@
+{
+  "id": "superisland.cainiao-packages",
+  "name": "Cainiao Packages",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.10",
+  "main": "index.js",
+  "author": { "name": "SuperIsland Custom" },
+  "description": "Show the latest shipping progress and pickup state of your Cainiao packages.",
+  "icon": "icon.svg",
+  "license": "MIT",
+  "categories": ["productivity", "lifestyle"],
+  "permissions": ["network", "storage"],
+  "capabilities": {
+    "compact": true,
+    "expanded": true,
+    "fullExpanded": true,
+    "minimalCompact": true,
+    "backgroundRefresh": true,
+    "settings": true
+  },
+  "layout": {
+    "expandedHeight": 116,
+    "fullExpandedHeight": 180
+  },
+  "refreshInterval": 2.0,
+  "activationTriggers": ["manual", "timer"],
+  "defaultEnabled": true
+}

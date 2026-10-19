@@ -8,6 +8,11 @@ import CryptoKit
 
 @MainActor
 final class ExtensionManager: ObservableObject {
+    struct RuntimeHeightPreference: Equatable {
+        var expanded: Double?
+        var fullExpanded: Double?
+    }
+
     private struct PresentedInteractionContext {
         let returnModule: ActiveModule?
     }
@@ -18,6 +23,7 @@ final class ExtensionManager: ObservableObject {
     @Published private(set) var runtimes: [String: ExtensionJSRuntime] = [:]
     @Published private(set) var extensionStates: [String: ExtensionViewState] = [:]
     @Published private(set) var settingsSchemas: [String: SettingsSchema] = [:]
+    @Published private(set) var runtimeHeightPreferences: [String: RuntimeHeightPreference] = [:]
 
     let localExtensionsDirectory: URL
     let developmentExtensionsDirectory: URL
@@ -107,13 +113,20 @@ final class ExtensionManager: ObservableObject {
                     // a harmless mirror — don't cry wolf. Different versions
                     // means something is genuinely stale and worth surfacing.
                     if existing.version != manifest.version {
+                        let shouldReplace = Self.isVersion(
+                            manifest.version,
+                            newerThan: existing.version
+                        )
                         ExtensionLogger.shared.log(
                             manifest.id,
                             .warning,
                             "Duplicate extension ID in discovery paths with differing versions " +
-                            "(keeping \(existing.version) at \(existing.bundleURL.path), " +
-                            "ignoring \(manifest.version) at \(manifest.bundleURL.path))"
+                            "(\(shouldReplace ? "using" : "keeping") \(shouldReplace ? manifest.version : existing.version), " +
+                            "ignoring \(shouldReplace ? existing.version : manifest.version))"
                         )
+                        if shouldReplace {
+                            discovered[manifest.id] = manifest
+                        }
                     }
                 } else {
                     discovered[manifest.id] = manifest
@@ -139,6 +152,28 @@ final class ExtensionManager: ObservableObject {
         for id in removedIDs {
             deactivate(extensionID: id)
         }
+    }
+
+    private static func isVersion(_ lhs: String, newerThan rhs: String) -> Bool {
+        let lhsComponents = lhs.split(separator: ".").map(String.init)
+        let rhsComponents = rhs.split(separator: ".").map(String.init)
+        let count = max(lhsComponents.count, rhsComponents.count)
+
+        for index in 0..<count {
+            let lhsValue = index < lhsComponents.count ? lhsComponents[index] : "0"
+            let rhsValue = index < rhsComponents.count ? rhsComponents[index] : "0"
+            let lhsNumber = Int(lhsValue)
+            let rhsNumber = Int(rhsValue)
+
+            if let lhsNumber, let rhsNumber {
+                if lhsNumber != rhsNumber {
+                    return lhsNumber > rhsNumber
+                }
+            } else if lhsValue != rhsValue {
+                return lhsValue.localizedStandardCompare(rhsValue) == .orderedDescending
+            }
+        }
+        return false
     }
 
     // MARK: - User-disabled persistence
@@ -258,6 +293,45 @@ final class ExtensionManager: ObservableObject {
         activate(extensionID: extensionID)
     }
 
+    func setPreferredHeights(extensionID: String, expanded: Double?, fullExpanded: Double?) {
+        let preference = RuntimeHeightPreference(
+            expanded: expanded?.isFinite == true ? expanded : nil,
+            fullExpanded: fullExpanded?.isFinite == true ? fullExpanded : nil
+        )
+
+        if preference.expanded == nil && preference.fullExpanded == nil {
+            runtimeHeightPreferences.removeValue(forKey: extensionID)
+        } else {
+            runtimeHeightPreferences[extensionID] = preference
+        }
+
+        AppState.shared.objectWillChange.send()
+    }
+
+    func preferredContentHeight(extensionID: String, state: IslandState) -> CGFloat? {
+        guard let manifest = installed.first(where: { $0.id == extensionID }) else { return nil }
+        let runtimePreference = runtimeHeightPreferences[extensionID]
+
+        let requested: Double?
+        let minimum: CGFloat
+        let maximum: CGFloat
+        switch state {
+        case .compact:
+            return nil
+        case .expanded:
+            requested = runtimePreference?.expanded ?? manifest.layout.expandedHeight
+            minimum = Constants.extensionMinimumExpandedHeight
+            maximum = Constants.extensionMaximumExpandedHeight
+        case .fullExpanded:
+            requested = runtimePreference?.fullExpanded ?? manifest.layout.fullExpandedHeight
+            minimum = Constants.extensionMinimumFullExpandedHeight
+            maximum = Constants.extensionMaximumFullExpandedHeight
+        }
+
+        guard let requested, requested.isFinite else { return nil }
+        return min(maximum, max(minimum, CGFloat(requested)))
+    }
+
     func deactivate(extensionID: String) {
         stopRefreshTimer(for: extensionID)
         immediateRefreshWorkItems[extensionID]?.cancel()
@@ -266,6 +340,9 @@ final class ExtensionManager: ObservableObject {
         runtimes[extensionID]?.deactivate()
         runtimes.removeValue(forKey: extensionID)
         extensionStates.removeValue(forKey: extensionID)
+        if runtimeHeightPreferences.removeValue(forKey: extensionID) != nil {
+            AppState.shared.objectWillChange.send()
+        }
 
         if extensionID == AgentsStatusBridge.managedExtensionID {
             AgentsStatusBridge.shared.stop()
@@ -444,9 +521,12 @@ final class ExtensionManager: ObservableObject {
         let interval = max(1, manifest.refreshInterval)
         let module = refreshModule(for: manifest)
         let tolerance = min(0.5, max(0.1, interval * 0.25))
-        let policy: ModuleRefreshPolicy = manifest.capabilities.notificationFeed
-            ? .interval(interval, tolerance: tolerance)
-            : .visibleOnly(interval, tolerance: tolerance)
+        let isSyncedLyrics = manifest.id == "com.wangxulong.superisland.synced-lyrics"
+        let policy: ModuleRefreshPolicy = isSyncedLyrics
+            ? .realtime(interval, tolerance: 0.1)
+            : (manifest.capabilities.notificationFeed
+                ? .interval(interval, tolerance: tolerance)
+                : .visibleOnly(interval, tolerance: tolerance))
 
         refreshTokens[manifest.id] = ModuleRefreshScheduler.shared.register(
             id: "extension.\(manifest.id).refresh",
@@ -458,6 +538,7 @@ final class ExtensionManager: ObservableObject {
                 return self.runtimes[manifest.id] != nil
                     && manifest.capabilities.backgroundRefresh
                     && manifest.activationTriggers.contains { $0.caseInsensitiveCompare("timer") == .orderedSame }
+                    && (!isSyncedLyrics || AppState.shared.isModuleVisibleForRefresh(module))
             }
         ) { [weak self] in
             self?.refreshState(extensionID: manifest.id)
@@ -846,11 +927,11 @@ final class WhatsAppWebBridge: ObservableObject {
 
     private static func showNodeJSInstallAlert() {
         let alert = NSAlert()
-        alert.messageText = "Node.js Required for WhatsApp"
-        alert.informativeText = "The WhatsApp integration needs Node.js to run. It's a free, one-time install — just download the macOS installer from nodejs.org and restart Super Island."
+        alert.messageText = L10n.string("Node.js Required for WhatsApp")
+        alert.informativeText = L10n.string("The WhatsApp integration needs Node.js to run. It's a free, one-time install — just download the macOS installer from nodejs.org and restart Super Island.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Download Node.js")
-        alert.addButton(withTitle: "Dismiss")
+        alert.addButton(withTitle: L10n.string("Download Node.js"))
+        alert.addButton(withTitle: L10n.string("Dismiss"))
         if alert.runModal() == .alertFirstButtonReturn {
             NSWorkspace.shared.open(URL(string: "https://nodejs.org/en/download")!)
         }

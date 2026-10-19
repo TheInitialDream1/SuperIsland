@@ -25,6 +25,11 @@ struct ExtensionRendererView: View {
                     .tint(.white)
             }
         }
+        .onReceive(NowPlayingManager.shared.$title.combineLatest(NowPlayingManager.shared.$artist)) { _ in
+            if extensionID == "com.wangxulong.superisland.synced-lyrics" {
+                manager.scheduleImmediateRefresh(extensionID: extensionID)
+            }
+        }
     }
 
     private var containerAlignment: Alignment {
@@ -66,7 +71,7 @@ struct ViewNodeRenderer: View {
     var body: some View {
         switch node {
         case .text(let value, let style, let color, let lineLimit):
-            Text(value)
+            Text(L10n.extensionText(value, extensionID: extensionID))
                 .font(style.font)
                 .foregroundStyle(color.swiftUI)
                 .lineLimit(lineLimit)
@@ -75,14 +80,14 @@ struct ViewNodeRenderer: View {
 
         case .marqueeText(let value, let style, let color):
             ExtensionMarqueeTextNode(
-                value: value,
+                value: L10n.extensionText(value, extensionID: extensionID),
                 style: style,
                 color: color.swiftUI
             )
 
         case .markdownText(let value, let style, let color, let lineLimit):
             ExtensionMarkdownTextNode(
-                markdown: value,
+                markdown: L10n.extensionText(value, extensionID: extensionID),
                 style: style,
                 color: color.swiftUI,
                 lineLimit: lineLimit
@@ -178,7 +183,7 @@ struct ViewNodeRenderer: View {
 
         case .gauge(let value, let min, let max, let label):
             Gauge(value: value, in: min...max) {
-                Text(label ?? "")
+                Text(L10n.extensionText(label ?? "", extensionID: extensionID))
             }
 
         case .divider:
@@ -197,7 +202,7 @@ struct ViewNodeRenderer: View {
             ExtensionInputBoxNode(
                 extensionID: extensionID,
                 inputID: inputID,
-                placeholder: placeholder,
+                placeholder: L10n.extensionText(placeholder, extensionID: extensionID),
                 text: text,
                 actionID: actionID,
                 autoFocus: autoFocus,
@@ -209,7 +214,7 @@ struct ViewNodeRenderer: View {
         case .toggle(let isOn, let label, let actionID):
             ExtensionToggleNode(
                 extensionID: extensionID,
-                label: label,
+                label: L10n.extensionText(label, extensionID: extensionID),
                 isOn: isOn,
                 actionID: actionID
             )
@@ -222,6 +227,47 @@ struct ViewNodeRenderer: View {
                 max: max,
                 actionID: actionID
             )
+
+        case .nowPlayingLyrics(let content):
+            if hasMediaPermission {
+                NowPlayingLyricsView(content: content, onAction: { actionID in
+                    manager.handleAction(extensionID: extensionID, actionID: actionID)
+                }) {
+                    manager.handleAction(extensionID: extensionID, actionID: "retry")
+                }
+            } else {
+                EmptyView()
+            }
+
+        case .nowPlayingPlayer(let artworkSize, let showArtwork):
+            if hasMediaPermission {
+                ExtensionNowPlayingPlayerNode(artworkSize: artworkSize, showArtwork: showArtwork)
+            } else {
+                EmptyView()
+            }
+
+        case .nowPlayingArtwork(let size, let cornerRadius):
+            if hasMediaPermission {
+                ExtensionNowPlayingArtworkNode(size: size, cornerRadius: cornerRadius)
+            } else {
+                EmptyView()
+            }
+
+        case .nowPlayingTransport(let showProgress):
+            if hasMediaPermission {
+                ExtensionNowPlayingTransportNode(showProgress: showProgress)
+            } else {
+                EmptyView()
+            }
+
+        case .nowPlayingBackdrop(let child):
+            if hasMediaPermission {
+                ExtensionNowPlayingBackdropNode {
+                    ViewNodeRenderer(node: child, extensionID: extensionID)
+                }
+            } else {
+                EmptyView()
+            }
 
         case .padding(let child, let edges, let amount):
             ViewNodeRenderer(node: child, extensionID: extensionID)
@@ -334,6 +380,13 @@ struct ViewNodeRenderer: View {
         }
 
         return image
+    }
+
+    private var hasMediaPermission: Bool {
+        manager.installed
+            .first(where: { $0.id == extensionID })?
+            .permissions
+            .contains("media") == true
     }
 }
 
@@ -491,6 +544,10 @@ private struct ExtensionMarqueeTextNode: View {
             return 22
         case .subtitle:
             return 18
+        case .lyricActive:
+            return 28
+        case .lyric:
+            return 16
         case .headline, .monospaced:
             return 18
         case .body:
@@ -957,6 +1014,319 @@ private struct ExtensionSliderNode: View {
                     manager.handleAction(extensionID: extensionID, actionID: actionID, value: localValue)
                 }
             }
+        )
+    }
+}
+
+private struct ExtensionNowPlayingPlayerNode: View {
+    let artworkSize: Double
+    let showArtwork: Bool
+
+    @ObservedObject private var player = NowPlayingManager.shared
+    @State private var progressPresentationID = UUID()
+
+    var body: some View {
+        Group {
+            if player.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(player.emptyTitle)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(1)
+                        Text(player.emptySubtitle)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.42))
+                            .lineLimit(2)
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(player.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text(secondaryLine)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.48))
+                        .lineLimit(1)
+
+                    HStack(alignment: .center, spacing: 10) {
+                        if showArtwork {
+                            AlbumArtView(image: player.albumArt, size: CGFloat(artworkSize))
+                        }
+
+                        VStack(spacing: 2) {
+                            controls
+
+                            ProgressBar(
+                                progress: player.progress,
+                                trackHeight: 3,
+                                knobSize: 7,
+                                duration: player.duration, context: player.seekContextIdentifier,
+                                onPreview: player.previewSeek
+                            ) { newProgress in
+                                player.seek(to: player.duration * newProgress)
+                            }
+                            .frame(height: 28)
+
+                            HStack {
+                                Text(player.formattedElapsedTime)
+                                Spacer(minLength: 8)
+                                Text(player.duration > 0 ? player.formattedDuration : "--:--")
+                            }
+                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.38))
+                            .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .onAppear {
+            player.beginProgressPresentation(id: progressPresentationID)
+        }
+        .onDisappear {
+            player.endProgressPresentation(id: progressPresentationID)
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: 10) {
+            transportButton(systemName: "backward.fill", action: player.previousTrack)
+            transportButton(
+                systemName: player.isPlaying ? "pause.fill" : "play.fill",
+                action: player.togglePlayPause,
+                isPrimary: true
+            )
+            transportButton(systemName: "forward.fill", action: player.nextTrack)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func transportButton(
+        systemName: String,
+        action: @escaping () -> Void,
+        isPrimary: Bool = false
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: isPrimary ? 13 : 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.94))
+                .frame(width: isPrimary ? 28 : 23, height: isPrimary ? 28 : 23)
+                .background(
+                    Circle().fill(.white.opacity(isPrimary ? 0.14 : 0.07))
+                )
+                .overlay(
+                    Circle().stroke(.white.opacity(isPrimary ? 0.12 : 0.06), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .hoverPointer()
+    }
+
+    private var secondaryLine: String {
+        let artist = player.artist.trimmingCharacters(in: .whitespacesAndNewlines)
+        let album = player.album.trimmingCharacters(in: .whitespacesAndNewlines)
+        return [artist, album].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}
+
+private struct ExtensionNowPlayingArtworkNode: View {
+    let size: Double
+    let cornerRadius: Double
+
+    @ObservedObject private var player = NowPlayingManager.shared
+
+    var body: some View {
+        Group {
+            if let artwork = player.albumArt {
+                Image(nsImage: artwork)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.16),
+                            Color.white.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+
+                    Image(systemName: "music.note")
+                        .font(.system(size: max(14, size * 0.3), weight: .medium))
+                        .foregroundStyle(.white.opacity(0.58))
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(.white.opacity(0.12), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+    }
+}
+
+private struct ExtensionNowPlayingTransportNode: View {
+    let showProgress: Bool
+
+    @ObservedObject private var player = NowPlayingManager.shared
+    @State private var progressPresentationID = UUID()
+
+    var body: some View {
+        VStack(spacing: 4) {
+            if showProgress {
+                ProgressBar(
+                    progress: player.progress,
+                    trackHeight: 3,
+                    knobSize: 7,
+                    duration: player.duration, context: player.seekContextIdentifier,
+                    onPreview: player.previewSeek
+                ) { newProgress in
+                    player.seek(to: player.duration * newProgress)
+                }
+                .frame(height: 28)
+            }
+
+            HStack(spacing: 8) {
+                Text(timeText)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.56))
+                    .lineLimit(1)
+
+                Spacer(minLength: 10)
+
+                transportButton(systemName: "backward.fill", action: player.previousTrack)
+                transportButton(
+                    systemName: player.isPlaying ? "pause.fill" : "play.fill",
+                    action: player.togglePlayPause,
+                    isPrimary: true
+                )
+                transportButton(systemName: "forward.fill", action: player.nextTrack)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            player.beginProgressPresentation(id: progressPresentationID)
+        }
+        .onDisappear {
+            player.endProgressPresentation(id: progressPresentationID)
+        }
+    }
+
+    private var timeText: String {
+        let elapsed = player.duration > 0 ? player.formattedElapsedTime : "--:--"
+        let duration = player.duration > 0 ? player.formattedDuration : "--:--"
+        return "\(elapsed) / \(duration)"
+    }
+
+    private func transportButton(
+        systemName: String,
+        action: @escaping () -> Void,
+        isPrimary: Bool = false
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: isPrimary ? 12 : 10, weight: .bold))
+                .foregroundStyle(.white.opacity(isPrimary ? 0.98 : 0.78))
+                .frame(width: isPrimary ? 26 : 22, height: isPrimary ? 26 : 22)
+                .background(
+                    Circle()
+                        .fill(.white.opacity(isPrimary ? 0.14 : 0.06))
+                )
+        }
+        .buttonStyle(.plain)
+        .hoverPointer()
+    }
+}
+
+private struct ExtensionNowPlayingBackdropNode<Content: View>: View {
+    @ObservedObject private var player = NowPlayingManager.shared
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: palette,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            if let artwork = player.albumArt {
+                Image(nsImage: artwork)
+                    .resizable()
+                    .scaledToFill()
+                    .blur(radius: 38)
+                    .opacity(0.28)
+                    .blendMode(.softLight)
+            }
+
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.18),
+                    .black.opacity(0.04),
+                    .black.opacity(0.14)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            content()
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .animation(
+            player.albumArt == nil ? .easeOut(duration: 0.18) : .easeInOut(duration: 0.5),
+            value: player.albumArt?.tiffRepresentation
+        )
+    }
+
+    private var palette: [Color] {
+        [
+            derivedColor(hueShift: -0.035, saturationScale: 1.08, brightnessScale: 0.82),
+            derivedColor(hueShift: 0.025, saturationScale: 1.02, brightnessScale: 0.72),
+            derivedColor(hueShift: 0.095, saturationScale: 0.96, brightnessScale: 0.9)
+        ]
+    }
+
+    private func derivedColor(
+        hueShift: CGFloat,
+        saturationScale: CGFloat,
+        brightnessScale: CGFloat
+    ) -> Color {
+        let fallback = NSColor(
+            hue: 0.38,
+            saturation: 0.42,
+            brightness: 0.34,
+            alpha: 1
+        )
+        let source = (player.albumArtColor ?? fallback).usingColorSpace(.sRGB) ?? fallback
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        source.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        let shiftedHue = (hue + hueShift + 1).truncatingRemainder(dividingBy: 1)
+        return Color(
+            hue: Double(shiftedHue),
+            saturation: Double(min(max(saturation * saturationScale, 0.38), 0.78)),
+            brightness: Double(min(max(brightness * brightnessScale, 0.27), 0.52)),
+            opacity: 1
         )
     }
 }

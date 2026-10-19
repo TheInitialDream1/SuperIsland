@@ -118,6 +118,8 @@ struct GeneralSettingsView: View {
             // Display
             SettingSectionLabel(title: "Display")
             SettingGroup {
+                DisplayPickerRow()
+                SettingRowDivider()
                 SettingToggleRow(title: "Show on all Spaces", isOn: $appState.showOnAllSpaces)
                 if appState.presentationHasNotch {
                     SettingRowDivider()
@@ -226,6 +228,12 @@ struct GeneralSettingsView: View {
             SettingGroup {
                 SettingToggleRow(title: "Island surface swipes", isOn: $appState.islandSurfaceSwipeEnabled)
                 SettingRowDivider()
+                SettingToggleRow(
+                    title: "Show module switch arrows",
+                    description: "Show previous and next buttons on both sides of the island.",
+                    isOn: $appState.showModuleCyclerArrows
+                )
+                SettingRowDivider()
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Notch haptic intensity").font(.system(size: 13))
@@ -311,8 +319,8 @@ struct GeneralSettingsView: View {
                 .frame(width: 18, alignment: .center)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13))
-                Text(description).font(.system(size: 11)).foregroundColor(.secondary)
+                Text(L10n.string(title)).font(.system(size: 13))
+                Text(L10n.string(description)).font(.system(size: 11)).foregroundColor(.secondary)
             }
 
             Spacer()

@@ -41,20 +41,20 @@ enum NotificationFeedSource: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .extensions: return "Extension notifications"
+        case .extensions: return L10n.string("Extension notifications")
         case .whatsApp: return "WhatsApp"
-        case .compatibleApps: return "Compatible app broadcasts"
+        case .compatibleApps: return L10n.string("Compatible app broadcasts")
         }
     }
 
     var description: String {
         switch self {
         case .extensions:
-            return "Notifications sent by installed SuperIsland extensions."
+            return L10n.string("Notifications sent by installed SuperIsland extensions.")
         case .whatsApp:
-            return "Notifications from the bundled WhatsApp integration."
+            return L10n.string("Notifications from the bundled WhatsApp integration.")
         case .compatibleApps:
-            return "Notification-like events from apps that publish public distributed notifications."
+            return L10n.string("Notification-like events from apps that publish public distributed notifications.")
         }
     }
 

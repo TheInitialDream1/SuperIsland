@@ -30,15 +30,15 @@ enum ModuleType: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .nowPlaying: return "Now Playing"
-        case .volumeHUD: return "Volume"
-        case .battery: return "Battery"
-        case .shelf: return "Shelf"
-        case .connectivity: return "Connectivity"
-        case .calendar: return "Calendar"
-        case .weather: return "Weather"
-        case .notifications: return "Notifications"
-        case .teleprompter: return "Teleprompter"
+        case .nowPlaying: return L10n.string("Now Playing")
+        case .volumeHUD: return L10n.string("Volume")
+        case .battery: return L10n.string("Battery")
+        case .shelf: return L10n.string("Shelf")
+        case .connectivity: return L10n.string("Connectivity")
+        case .calendar: return L10n.string("Calendar")
+        case .weather: return L10n.string("Weather")
+        case .notifications: return L10n.string("Notifications")
+        case .teleprompter: return L10n.string("Teleprompter")
         }
     }
 
@@ -67,10 +67,10 @@ enum NotchHapticIntensity: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .off: return "Off"
-        case .subtle: return "Subtle"
-        case .medium: return "Medium"
-        case .strong: return "Strong"
+        case .off: return L10n.string("Off")
+        case .subtle: return L10n.string("Subtle")
+        case .medium: return L10n.string("Medium")
+        case .strong: return L10n.string("Strong")
         }
     }
 
@@ -210,7 +210,7 @@ enum FullExpandedTab: Hashable, Identifiable {
     var title: String {
         switch self {
         case .home:
-            return "Home"
+            return L10n.string("Home")
         case .module(let module):
             return module.displayName
         }
@@ -270,6 +270,9 @@ final class AppState: ObservableObject {
     @AppStorage("module.teleprompter.enabled") var teleprompterEnabled = false
     @AppStorage("module.shelf.autoOpenOnDrop") var shelfAutoOpenOnDrop = true
     @AppStorage("module.shelf.defaultToShelf") var shelfDefaultToShelf = false
+    /// AirDrop is optional in the custom build. Keep it off by default so the
+    /// shelf can use the full available width unless the user explicitly opts in.
+    @AppStorage("module.shelf.airDropEnabled") var shelfAirDropEnabled = false
 
     // Appearance settings
     @AppStorage("appearance.animationSpeed") var animationSpeed: Double = 1.0
@@ -295,11 +298,13 @@ final class AppState: ObservableObject {
     @AppStorage("general.lockFullExpandedInPlace") var lockFullExpandedInPlace = false
     @AppStorage("general.hideSideSlots") var hideSideSlots = false
     @AppStorage("general.hideOnFullscreen") var hideOnFullscreen = false
-    /// User-chosen display for the island. Empty string == "Automatic"
-    /// (original fallback chain: panel.screen → cursor → primary).
+    /// User-chosen display UUID. Empty string uses the fixed menu-bar display.
     @AppStorage("general.displayIdentifier") var displayIdentifier: String = ""
     /// Trackpad two-finger and drag swipes on the island surface (cycle modules, expand/dismiss).
     @AppStorage("general.islandSurfaceSwipeEnabled") var islandSurfaceSwipeEnabled = true
+    /// Optional edge buttons for cycling modules. Disabled by default in the
+    /// custom build because the top module bar and swipe gesture already cover it.
+    @AppStorage("general.showModuleCyclerArrows") var showModuleCyclerArrows = false
     @AppStorage("onboarding.completed") var onboardingCompleted = false
     @AppStorage("debug.alwaysShowOnboarding") var debugAlwaysShowOnboarding = false
 
@@ -315,8 +320,14 @@ final class AppState: ObservableObject {
     private var systemEmojiInteractionWorkItem: DispatchWorkItem?
     private var systemEmojiInteractionExpiry: Date?
     private var presentationHoldModule: ActiveModule?
+    private var popoverPresentationHolds: [UUID: ActiveModule] = [:]
     private var lastNotchEntryHapticDate: Date = .distantPast
     private init() {}
+
+#if DEBUG
+    static func makeIsolatedForTesting() -> AppState { AppState() }
+    func isPresentationHeldForTesting(_ module: ActiveModule) -> Bool { isPresentationHeld(module) }
+#endif
 
     // MARK: - Animations
 
@@ -541,6 +552,25 @@ final class AppState: ObservableObject {
     func releasePresentationHold(for module: ActiveModule) {
         guard presentationHoldModule == module else { return }
         presentationHoldModule = nil
+    }
+
+    /// A transient popover must not overwrite a module's persistent hold (for
+    /// example, a running teleprompter). Each presenting view owns its token.
+    func beginPopoverInteraction(id: UUID, for module: ActiveModule) {
+        popoverPresentationHolds[id] = module
+        cancelAutoDismiss()
+        cancelFullExpandedDismiss()
+        cancelHoverActivation()
+    }
+
+    func endPopoverInteraction(id: UUID) {
+        guard popoverPresentationHolds.removeValue(forKey: id) != nil else { return }
+        guard !isHovering, !suppressDismissScheduling else { return }
+        if currentState == .expanded {
+            scheduleAutoDismiss()
+        } else if currentState == .fullExpanded {
+            scheduleFullExpandedDismiss()
+        }
     }
 
     func handleHoverChange(_ hovering: Bool) {
@@ -818,8 +848,8 @@ final class AppState: ObservableObject {
     }
 
     private func isPresentationHeld(_ module: ActiveModule?) -> Bool {
-        guard let module, let presentationHoldModule else { return false }
-        return module == presentationHoldModule
+        guard let module else { return false }
+        return module == presentationHoldModule || popoverPresentationHolds.values.contains(module)
     }
 
     private func handleStateTransition(from oldValue: IslandState, to newValue: IslandState) {
@@ -1087,16 +1117,40 @@ final class AppState: ObservableObject {
                 height: baseSize.height
             )
         case .expanded:
-            return Constants.expandedSize
+            let base = Constants.expandedSize
+            return CGSize(
+                width: base.width,
+                height: preferredExtensionContentHeight(for: state) ?? base.height
+            )
         case .fullExpanded:
             let base = Constants.fullExpandedSize
+            let preferredHeight = preferredExtensionContentHeight(for: state) ?? base.height
             // On non-notch Macs the toolbar is inline (no shoulder area),
             // so it eats into content height. Add space for it.
             if usesOutwardTopCorners && !presentationHasNotch {
-                return CGSize(width: base.width, height: base.height + 50)
+                return CGSize(width: base.width, height: preferredHeight + 50)
             }
-            return base
+            return CGSize(width: base.width, height: preferredHeight)
         }
+    }
+
+    private func preferredExtensionContentHeight(for state: IslandState) -> CGFloat? {
+        let module: ActiveModule?
+        switch state {
+        case .compact:
+            return nil
+        case .expanded:
+            module = activeModule
+        case .fullExpanded:
+            if case .module(let selectedModule) = fullExpandedSelectedTab {
+                module = selectedModule
+            } else {
+                module = nil
+            }
+        }
+
+        guard case .extension_(let extensionID) = module else { return nil }
+        return ExtensionManager.shared.preferredContentHeight(extensionID: extensionID, state: state)
     }
 
     var windowSize: CGSize {
@@ -1117,8 +1171,10 @@ final class AppState: ObservableObject {
                 height: islandSize.height
             )
         case .expanded, .fullExpanded:
+            let gutter = showModuleCyclerArrows && availableModules.count > 1
+                ? Constants.moduleCyclerGutterWidth : 0
             return CGSize(
-                width: islandSize.width + (Constants.moduleCyclerGutterWidth * 2),
+                width: islandSize.width + gutter * 2,
                 height: islandSize.height + Constants.expandedShadowBottomPadding
             )
         }
@@ -1130,6 +1186,24 @@ final class AppState: ObservableObject {
         case .expanded: return Constants.expandedCornerRadius
         case .fullExpanded: return Constants.fullExpandedCornerRadius
         }
+    }
+
+    /// Shared by rendering and native mouse routing, including outward corners.
+    var currentIslandShape: PillShape {
+        PillShape(
+            topLeadingRadius: currentTopLeadingCornerRadius,
+            topTrailingRadius: currentTopTrailingCornerRadius,
+            bottomLeadingRadius: currentBottomLeadingCornerRadius,
+            bottomTrailingRadius: currentBottomTrailingCornerRadius,
+            outwardTopCorners: usesOutwardTopCorners,
+            topCutoutWidth: currentTopCutoutWidth,
+            topCutoutDepth: currentTopCutoutDepth,
+            topCutoutCornerRadius: currentTopCutoutCornerRadius
+        )
+    }
+
+    var showsModuleCycler: Bool {
+        showModuleCyclerArrows && currentState != .compact && availableModules.count > 1
     }
 
     var currentTopLeadingCornerRadius: CGFloat {
@@ -1196,7 +1270,16 @@ final class AppState: ObservableObject {
         currentContentSize.height
     }
 
+    var usesArtworkBackground: Bool {
+        let lyrics = ActiveModule.extension_("com.wangxulong.superisland.synced-lyrics")
+        if currentState == .fullExpanded {
+            return fullExpandedSelectedTab == .module(lyrics)
+        }
+        return currentState == .expanded && activeModule == lyrics
+    }
+
     var contentHorizontalPadding: CGFloat {
+        if usesArtworkBackground { return 0 }
         switch currentState {
         case .compact:
             return 0
@@ -1208,6 +1291,7 @@ final class AppState: ObservableObject {
     }
 
     var contentTopPadding: CGFloat {
+        if usesArtworkBackground { return 0 }
         switch currentState {
         case .compact:
             return 0
@@ -1222,6 +1306,7 @@ final class AppState: ObservableObject {
     }
 
     var contentBottomPadding: CGFloat {
+        if usesArtworkBackground { return 0 }
         switch currentState {
         case .compact:
             return 0

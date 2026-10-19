@@ -11,7 +11,7 @@ struct TeleprompterCompactView: View {
                 .foregroundColor(.white.opacity(manager.isPlaying ? 0.9 : 0.45))
                 .symbolEffect(.pulse, isActive: manager.isPlaying)
 
-            Text(label)
+            Text(L10n.string(label))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white.opacity(manager.hasScript ? 0.8 : 0.35))
                 .lineLimit(1)

@@ -6,6 +6,11 @@ enum Constants {
     static let nonNotchCompactSize = CGSize(width: 220, height: 28)
     static let expandedSize = CGSize(width: 408, height: 88)
     static let fullExpandedSize = CGSize(width: 658, height: 180)
+    static let extensionMinimumExpandedHeight: CGFloat = 72
+    static let extensionMinimumFullExpandedHeight: CGFloat = 96
+    // The panel computes its frame from the selected extension's actual height.
+    static let extensionMaximumExpandedHeight: CGFloat = 180
+    static let extensionMaximumFullExpandedHeight: CGFloat = 360
 
     // MARK: - Window
     static let windowMaxWidth: CGFloat = 420

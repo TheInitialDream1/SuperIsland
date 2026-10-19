@@ -150,7 +150,7 @@ final class ExtensionSettingsObserver: ObservableObject {
             object: UserDefaults.standard,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.bump()
             }
         }
@@ -253,7 +253,7 @@ struct ExtensionSettingsRenderer: View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(schema.sections) { section in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(section.title)
+                    Text(L10n.string(section.title))
                         .font(.subheadline.weight(.semibold))
 
                     ForEach(section.fields) { field in
@@ -269,29 +269,31 @@ struct ExtensionSettingsRenderer: View {
     private func fieldView(_ field: SettingsField) -> some View {
         switch field.type.lowercased() {
         case "toggle":
-            Toggle(field.label, isOn: boolBinding(for: field))
+            Toggle(isOn: boolBinding(for: field)) {
+                Text(L10n.string(field.label))
+            }
 
         case "slider":
             ExtensionSliderSettingsField(extensionID: extensionID, field: field)
 
         case "stepper":
             Stepper(
-                "\(field.label): \(Int(doubleBinding(for: field).wrappedValue))",
+                "\(L10n.string(field.label)): \(Int(doubleBinding(for: field).wrappedValue))",
                 value: doubleBinding(for: field),
                 in: (field.min ?? 0)...(field.max ?? 100),
                 step: field.step ?? 1
             )
 
         case "picker":
-            Picker(field.label, selection: stringBinding(for: field)) {
+            Picker(L10n.string(field.label), selection: stringBinding(for: field)) {
                 ForEach(field.options ?? []) { option in
-                    Text(option.label).tag(option.value)
+                    Text(L10n.string(option.label)).tag(option.value)
                 }
             }
             .pickerStyle(.menu)
 
         case "button":
-            Button(field.label) {
+            Button(L10n.string(field.label)) {
                 let actionID = field.action.flatMap { $0.isEmpty ? nil : $0 } ?? field.key
                 ExtensionManager.shared.handleAction(extensionID: extensionID, actionID: actionID)
             }
@@ -301,8 +303,8 @@ struct ExtensionSettingsRenderer: View {
 
         case "text", "color":
             VStack(alignment: .leading, spacing: 4) {
-                Text(field.label)
-                TextField(field.label, text: stringBinding(for: field))
+                Text(L10n.string(field.label))
+                TextField(L10n.string(field.label), text: stringBinding(for: field))
                     .textFieldStyle(.roundedBorder)
             }
 
@@ -413,7 +415,7 @@ private struct ExtensionSliderSettingsField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(field.label)
+                Text(L10n.string(field.label))
                 Spacer()
                 Text(String(format: "%.0f", value))
                     .font(.caption.monospacedDigit())

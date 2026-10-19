@@ -183,11 +183,13 @@ private struct HomeNowPlayingPanel: View {
             ProgressBar(
                 progress: manager.progress,
                 trackHeight: 3,
-                knobSize: 8
+                knobSize: 8,
+                duration: manager.duration, context: manager.seekContextIdentifier,
+                onPreview: manager.previewSeek
             ) { newProgress in
                 manager.seek(to: manager.duration * newProgress)
             }
-            .frame(height: 14)
+            .frame(height: 28)
 
             HStack {
                 Text(manager.formattedElapsedTime)
@@ -338,7 +340,7 @@ private struct HomeWeatherPanel: View {
                                 .font(HomeTypography.temperatureFont)
                                 .foregroundStyle(HomeTypography.primaryText)
 
-                            Text(manager.weather.condition)
+                            Text(L10n.weatherCondition(manager.weather.condition))
                                 .font(HomeTypography.secondaryFont)
                                 .foregroundStyle(HomeTypography.secondaryText)
                                 .lineLimit(1)
@@ -485,11 +487,11 @@ private struct HomeEmptyState: View {
                 .foregroundStyle(HomeTypography.tertiaryText)
                 .padding(.bottom, 2)
 
-            Text(title)
+            Text(L10n.string(title))
                 .font(HomeTypography.bodyTitleFont)
                 .foregroundStyle(HomeTypography.primaryText.opacity(0.9))
 
-            Text(subtitle)
+            Text(L10n.string(subtitle))
                 .font(HomeTypography.secondaryFont)
                 .foregroundStyle(HomeTypography.secondaryText)
                 .multilineTextAlignment(.center)

@@ -447,7 +447,7 @@ private struct TeleprompterSpeechStatus: View {
                 if manager.isPlaying, speech.isListening {
                     levelMeter
                 }
-                Text(statusText)
+                Text(L10n.string(statusText))
                     .font(.system(size: 10, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.tail)

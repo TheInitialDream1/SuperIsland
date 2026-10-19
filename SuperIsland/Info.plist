@@ -48,7 +48,9 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>SuperIsland needs location access for weather information.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>SuperIsland needs microphone access for audio visualization and Teleprompter word tracking.</string>
+    <string>SuperIsland needs microphone access for Teleprompter word tracking.</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>读取当前播放器的音频输出，用于显示实时频谱。音频只在本机分析，不录制或上传。</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>SuperIsland uses speech recognition to follow along with Teleprompter scripts as you read.</string>
     <key>NSAppleEventsUsageDescription</key>
