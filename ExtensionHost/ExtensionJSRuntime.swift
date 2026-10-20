@@ -287,6 +287,15 @@ final class ExtensionJSRuntime {
             }
         }
 
+        let select: @convention(block) () -> Void = { [weak self] in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                let state = AppState.shared
+                guard state.activeModule != self.islandActivationModule else { return }
+                state.setActiveModule(self.islandActivationModule)
+            }
+        }
+
         let dismiss: @convention(block) () -> Void = {
             DispatchQueue.main.async {
                 AppState.shared.dismiss()
@@ -319,6 +328,7 @@ final class ExtensionJSRuntime {
         }
 
         island.setObject(activate, forKeyedSubscript: "activate" as NSString)
+        island.setObject(select, forKeyedSubscript: "select" as NSString)
         island.setObject(dismiss, forKeyedSubscript: "dismiss" as NSString)
         island.setObject(setPreferredHeight, forKeyedSubscript: "setPreferredHeight" as NSString)
         island.setObject("compact", forKeyedSubscript: "state" as NSString)

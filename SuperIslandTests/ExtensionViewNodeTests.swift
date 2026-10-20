@@ -86,6 +86,18 @@ final class ExtensionViewNodeTests: XCTestCase {
         )
     }
 
+    func testCompactArtworkKeepsSmallDimensions() throws {
+        let context = try XCTUnwrap(JSContext())
+        XCTAssertEqual(
+            ViewNode.from(context.evaluateScript("({ type: 'now-playing-artwork', size: 18, cornerRadius: 4 })")),
+            .nowPlayingArtwork(size: 18, cornerRadius: 4)
+        )
+        XCTAssertEqual(
+            ViewNode.from(context.evaluateScript("({ type: 'now-playing-artwork', size: -5, cornerRadius: 4 })")),
+            .nowPlayingArtwork(size: 16, cornerRadius: 4)
+        )
+    }
+
     func testParsesCinematicLyricTextStyles() throws {
         let context = try XCTUnwrap(JSContext())
 

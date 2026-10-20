@@ -1163,7 +1163,7 @@ private struct ExtensionNowPlayingArtworkNode: View {
                     )
 
                     Image(systemName: "music.note")
-                        .font(.system(size: max(14, size * 0.3), weight: .medium))
+                        .font(.system(size: max(8, size * 0.3), weight: .medium))
                         .foregroundStyle(.white.opacity(0.58))
                 }
             }
@@ -1174,7 +1174,8 @@ private struct ExtensionNowPlayingArtworkNode: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.2), radius: size < 32 ? 1 : 8, y: size < 32 ? 0 : 4)
+        .accessibilityLabel("专辑封面")
     }
 }
 

@@ -1744,14 +1744,17 @@
         state.match = null;
       }
       function maybeRevealForNewTrack() {
-        if (!state.snapshot) return;
+        if (!state.snapshot || !isPlaying(state.snapshot)) return;
         var keepForeground = settingBool("foregroundWhilePlaying", true);
         var revealBriefly = settingBool("autoRevealOnTrackChange", false);
-        if (!keepForeground && (!revealBriefly || !isPlaying(state.snapshot))) return;
         try {
-          SuperIsland.island.activate(keepForeground ? false : true);
+          if (revealBriefly) {
+            SuperIsland.island.activate(true);
+          } else if (keepForeground && typeof SuperIsland.island.select === "function") {
+            SuperIsland.island.select();
+          }
         } catch (error) {
-          logWarning("\u65E0\u6CD5\u81EA\u52A8\u5C55\u5F00\u6B4C\u8BCD\u5C9B");
+          logWarning("\u65E0\u6CD5\u66F4\u65B0\u6B4C\u8BCD\u5C9B\u663E\u793A\u72B6\u6001");
         }
       }
       async function loadLyricsForSnapshot(snapshot, force) {
@@ -1930,25 +1933,30 @@
       function accentColor() {
         return { r: 1, g: 0.66, b: 0.22, a: 1 };
       }
+      function compactArtwork(size) {
+        if (typeof View.nowPlayingArtwork === "function") {
+          return View.nowPlayingArtwork({ size, cornerRadius: 4 });
+        }
+        return View.icon("music.note", { size: 13, color: accentColor() });
+      }
       function compactView() {
         void tick();
         if (!state.snapshot || !trimString(state.snapshot.title)) {
           return View.hstack([
-            View.icon("quote.bubble", { size: 13, color: white(0.55) }),
+            View.icon("music.note", { size: 13, color: white(0.55) }),
             View.text("\u6B4C\u8BCD\u5F85\u673A", { style: "footnote", color: white(0.6), lineLimit: 1 })
           ], { spacing: 6, align: "center" });
         }
         if (state.lookupStatus === "loading") {
           return View.hstack([
-            View.animate(View.icon("waveform", { size: 13, color: accentColor() }), "pulse"),
+            compactArtwork(18),
             View.text("\u6B63\u5728\u5339\u914D\u6B4C\u8BCD", { style: "footnote", color: white(0.72), lineLimit: 1 })
           ], { spacing: 6, align: "center" });
         }
         var lyric = currentLyricText();
         var label = lyric || simplifyChinese(trimString(state.snapshot.title));
-        var iconName = isPlaying(state.snapshot) ? "music.note" : "pause.fill";
         return View.hstack([
-          View.icon(iconName, { size: 12, color: lyric ? accentColor() : white(0.55) }),
+          compactArtwork(18),
           View.frame(View.text(label, {
             style: "footnote",
             color: lyric ? "white" : white(0.68),
@@ -1957,7 +1965,8 @@
         ], { spacing: 7, align: "center" });
       }
       function minimalLeadingView() {
-        return View.frame(View.icon("quote.bubble.fill", { size: 14, color: accentColor() }), {
+        void tick();
+        return View.frame(compactArtwork(18), {
           width: 18,
           height: 18,
           alignment: "leading"

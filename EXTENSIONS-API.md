@@ -305,6 +305,8 @@ declare namespace SuperIsland {
   namespace island {
     /** Request the island to show this extension (or Notifications when manifest.capabilities.notificationFeed=true). */
     function activate(autoDismiss?: boolean): void;
+    /** Select this module without changing the island's open state or dismissal timer. */
+    function select(): void;
     /** Dismiss the island back to compact. */
     function dismiss(): void;
     /** Current island state: "compact" | "expanded" | "fullExpanded" */

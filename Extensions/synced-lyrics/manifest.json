@@ -1,7 +1,7 @@
 {
   "id": "com.wangxulong.superisland.synced-lyrics",
   "name": "同步歌词",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "minAppVersion": "1.0.2",
   "main": "bundle.js",
   "author": {

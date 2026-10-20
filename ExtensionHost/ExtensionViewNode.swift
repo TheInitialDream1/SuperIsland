@@ -344,7 +344,7 @@ indirect enum ViewNode: Equatable {
             let size = propertyDouble(value, key: "size") ?? 78
             let radius = propertyDouble(value, key: "cornerRadius") ?? 12
             return .nowPlayingArtwork(
-                size: min(max(size, 36), 180),
+                size: min(max(size, 16), 180),
                 cornerRadius: min(max(radius, 0), 32)
             )
 

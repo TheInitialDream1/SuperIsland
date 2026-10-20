@@ -124,7 +124,8 @@ Registers your extension module config.
 
 ### `SuperIsland.island`
 
-- `activate(autoDismiss = true)`
+- `activate(autoDismiss = true)`: reveals the island and selects this module
+- `select()`: selects this module without expanding, collapsing or changing its dismissal timer
 - `dismiss()`
 - `setPreferredHeight({ expanded?, fullExpanded? })`: overrides manifest heights for the current runtime; passing a number sets only `fullExpanded`
 - `state`: `"compact" | "expanded" | "fullExpanded"`
@@ -246,7 +247,7 @@ Notes:
 - The player observes `NowPlayingManager` directly and includes previous, play/pause, next, and draggable seek controls.
 - `options.artworkSize` accepts `36...78` points and defaults to `54`.
 - `options.showArtwork` controls album artwork visibility and defaults to `true`.
-- `View.nowPlayingArtwork(options?)` renders only the current album artwork. `size` accepts `36...180` and `cornerRadius` accepts `0...32`.
+- `View.nowPlayingArtwork(options?)` renders only the current album artwork. `size` accepts `16...180` and `cornerRadius` accepts `0...32`.
 - `View.nowPlayingTransport(options?)` renders time, draggable progress, previous, play/pause, and next controls. Set `showProgress: false` to hide the progress line.
 - `View.nowPlayingBackdrop(child)` renders `child` over a full-size gradient and soft album-art color wash derived from the current cover.
 - Requires the extension to declare the `"media"` permission.

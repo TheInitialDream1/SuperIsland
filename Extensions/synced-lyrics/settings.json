@@ -15,7 +15,7 @@
           "key": "foregroundWhilePlaying",
           "label": "播放时将歌词岛置前",
           "default": true,
-          "description": "匹配到同步歌词后，将歌词扩展作为当前灵动岛内容。关闭后仅保留在扩展槽中。"
+          "description": "播放时将歌词设为当前内容，保持原有展开/收起状态；自动展开由“切歌时短暂展开”控制。"
         },
         {
           "type": "toggle",
@@ -29,7 +29,7 @@
           "key": "autoRevealOnTrackChange",
           "label": "切歌时短暂展开",
           "default": false,
-          "description": "匹配到新歌曲歌词后自动展开一次灵动岛。"
+          "description": "播放中切到新歌曲并匹配歌词后短暂展开一次；关闭后切歌保持当前展开/收起状态。"
         },
         {
           "type": "slider",

@@ -238,3 +238,16 @@ presentation hold before opening. It releases the hold on closing, anchor
 teardown or page disappearance, then resumes the normal dismissal policy.
 Multiple presenters cannot release each other's tokens, persistent module holds
 remain intact, and the user's full-expanded lock preference is never changed.
+
+## Lyrics selection and compact artwork (build 30)
+
+The foreground-while-playing option uses `island.select()`, which only calls
+`AppState.setActiveModule`; it preserves compact/expanded/full-expanded state
+and the existing dismissal policy. Only the independent track-change reveal
+option calls `activate(true)`. Paused track changes do neither. Repeated polls
+and view renders do not retrigger the match presentation. Older hosts without
+`select()` keep their current state rather than falling back to activation.
+
+Both compact layouts use the native observed current artwork at 18 points,
+including while lyrics are loading. The artwork node accepts 16–180 points,
+updates from the media owner on track changes, and has a music-note fallback.
