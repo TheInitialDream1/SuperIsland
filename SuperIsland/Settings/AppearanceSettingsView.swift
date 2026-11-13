@@ -17,6 +17,15 @@ struct AppearanceSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
 
             section(
+                title: "Background Opacity",
+                reset: { appState.backgroundOpacity = 1 }
+            ) {
+                IslandBackgroundOpacityControl()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+
+            section(
                 title: "Animation",
                 reset: {
                     appState.animationLevel = Defaults.animationLevel

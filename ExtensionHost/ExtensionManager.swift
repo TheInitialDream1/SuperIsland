@@ -20,7 +20,14 @@ final class ExtensionManager: ObservableObject {
     static let shared = ExtensionManager()
 
     @Published private(set) var installed: [ExtensionManifest] = []
-    @Published private(set) var runtimes: [String: ExtensionJSRuntime] = [:]
+    @Published private(set) var activeNativeUtilityIDs: Set<String> = [] {
+        didSet { AppState.shared.objectWillChange.send() }
+    }
+    @Published private(set) var runtimes: [String: ExtensionJSRuntime] = [:] {
+        didSet {
+            if Set(oldValue.keys) != Set(runtimes.keys) { AppState.shared.objectWillChange.send() }
+        }
+    }
     @Published private(set) var extensionStates: [String: ExtensionViewState] = [:]
     @Published private(set) var settingsSchemas: [String: SettingsSchema] = [:]
     @Published private(set) var runtimeHeightPreferences: [String: RuntimeHeightPreference] = [:]
@@ -51,9 +58,17 @@ final class ExtensionManager: ObservableObject {
     var availableModules: [ActiveModule] {
         installed
             .filter { manifest in
-                runtimes[manifest.id] != nil && !manifest.capabilities.notificationFeed
+                isActive(extensionID: manifest.id) && !manifest.capabilities.notificationFeed
             }
             .map { ActiveModule.extension_($0.id) }
+    }
+
+    var activeExtensionIDs: Set<String> {
+        activeNativeUtilityIDs.union(runtimes.keys)
+    }
+
+    func isActive(extensionID: String) -> Bool {
+        activeNativeUtilityIDs.contains(extensionID) || runtimes[extensionID] != nil
     }
 
     func isNotificationFeedExtension(_ extensionID: String) -> Bool {
@@ -139,6 +154,11 @@ final class ExtensionManager: ObservableObject {
             }
         }
 
+        for utility in NativeUtilityExtension.allCases {
+            discovered[utility.id] = ExtensionManifest(nativeUtility: utility)
+            discoveredSchemas.removeValue(forKey: utility.id)
+        }
+
         let manifests = discovered.values.sorted { lhs, rhs in
             lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
@@ -146,7 +166,7 @@ final class ExtensionManager: ObservableObject {
         settingsSchemas = discoveredSchemas
 
         // Deactivate runtimes that are no longer present.
-        let activeIDs = Set(runtimes.keys)
+        let activeIDs = activeExtensionIDs
         let discoveredIDs = Set(manifests.map(\.id))
         let removedIDs = activeIDs.subtracting(discoveredIDs)
         for id in removedIDs {
@@ -212,8 +232,13 @@ final class ExtensionManager: ObservableObject {
     /// userDisabled until the user opts in via Settings.
     private func registerNewlyDiscoveredExtensions() {
         let installedIDs = Set(installed.map(\.id))
-        let optOutIDs = Set(installed.filter { !$0.defaultEnabled }.map(\.id))
         let defaults = UserDefaults.standard
+        let clipboardID = NativeUtilityExtension.clipboard.id
+        let previouslyRecording = defaults.bool(forKey: ClipboardHistoryStore.enabledKey)
+        // Build 31/32 used the recording preference to enable its standalone
+        // clipboard tab. Carry that explicit choice into the native extension.
+        let migratedIDs: Set<String> = previouslyRecording ? [clipboardID] : []
+        let optOutIDs = Set(installed.filter { !$0.defaultEnabled }.map(\.id)).subtracting(migratedIDs)
         let storedSeen = defaults.array(forKey: Self.seenExtensionsKey) as? [String]
 
         guard let storedSeen else {
@@ -230,7 +255,7 @@ final class ExtensionManager: ObservableObject {
         }
 
         let seen = Set(storedSeen)
-        let newIDs = installedIDs.subtracting(seen)
+        let newIDs = installedIDs.subtracting(seen).subtracting(migratedIDs)
         if !newIDs.isEmpty {
             var disabled = userDisabledIDs()
             for id in newIDs {
@@ -261,8 +286,14 @@ final class ExtensionManager: ObservableObject {
             persistUserDisabledIDs(ids)
         }
 
-        guard runtimes[extensionID] == nil else { return }
-        guard let manifest = installed.first(where: { $0.id == extensionID }) else { return }
+        guard !isActive(extensionID: extensionID),
+              let manifest = installed.first(where: { $0.id == extensionID }) else { return }
+
+        if let utility = NativeUtilityExtension(id: extensionID) {
+            activeNativeUtilityIDs.insert(extensionID)
+            if utility == .clipboard { updateClipboardRecording() }
+            return
+        }
 
         do {
             let runtime = try ExtensionJSRuntime(manifest: manifest, manager: self)
@@ -332,7 +363,20 @@ final class ExtensionManager: ObservableObject {
         return min(maximum, max(minimum, CGFloat(requested)))
     }
 
+    func updateClipboardRecording() {
+        let enabled = isActive(extensionID: NativeUtilityExtension.clipboard.id)
+            && AppState.shared.clipboardRecordingEnabled
+        ClipboardHistoryStore.shared.updateRecording(enabled)
+    }
+
     func deactivate(extensionID: String) {
+        if let utility = NativeUtilityExtension(id: extensionID) {
+            guard activeNativeUtilityIDs.remove(extensionID) != nil else { return }
+            if utility == .clipboard { updateClipboardRecording() }
+            AppState.shared.removeUtilitySelection(utility.module)
+            return
+        }
+
         stopRefreshTimer(for: extensionID)
         immediateRefreshWorkItems[extensionID]?.cancel()
         immediateRefreshWorkItems.removeValue(forKey: extensionID)
@@ -451,6 +495,9 @@ final class ExtensionManager: ObservableObject {
         }
 
         let manifest = try ExtensionManifest.load(from: sourceDirectory)
+        guard NativeUtilityExtension(id: manifest.id) == nil else {
+            throw ExtensionManifest.ManifestError.invalidSource(source)
+        }
         let destination = installedExtensionsDirectory.appendingPathComponent(manifest.id, isDirectory: true)
 
         if fileManager.fileExists(atPath: destination.path) {
@@ -467,6 +514,7 @@ final class ExtensionManager: ObservableObject {
     }
 
     func uninstall(extensionID: String) throws {
+        guard NativeUtilityExtension(id: extensionID) == nil else { return }
         deactivate(extensionID: extensionID)
 
         var ids = userDisabledIDs()

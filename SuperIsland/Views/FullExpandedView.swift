@@ -70,7 +70,11 @@ struct FullExpandedView: View {
         case .builtIn(.nowPlaying), .builtIn(.connectivity):
             HomeScreenView()
         case .extension_(let extensionID):
-            ExtensionRendererView(extensionID: extensionID, displayMode: .fullExpanded)
+            if let utility = NativeUtilityExtension(id: extensionID) {
+                NativeUtilityPanel(utility: utility).id(extensionID)
+            } else {
+                ExtensionRendererView(extensionID: extensionID, displayMode: .fullExpanded)
+            }
         }
     }
 
@@ -207,6 +211,7 @@ struct FullExpandedTopBarView: View {
                     .padding(.horizontal, 2)
                     .padding(.bottom, 10)
                 }
+                .onAppear { proxy.scrollTo(appState.fullExpandedSelectedTab.id, anchor: .leading) }
                 .onChange(of: appState.fullExpandedSelectedTab) { _, newTab in
                     withAnimation(.easeInOut(duration: 0.22)) {
                         proxy.scrollTo(newTab.id, anchor: .leading)
@@ -220,6 +225,10 @@ struct FullExpandedTopBarView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            if moduleTabs.count > 6 {
+                nextPanelButton
+                    .padding(.bottom, 10)
+            }
             trailingShoulderControls
                 .padding(.bottom, 10)
         }
@@ -284,10 +293,33 @@ struct FullExpandedTopBarView: View {
                     }
                 }
             }
+            if showsShoulderNextPanel {
+                nextPanelButton
+            }
         }
         .frame(width: leadingShoulderWidth, alignment: .leading)
         .padding(.leading, shoulderLeadingInset)
         .clipped()
+    }
+
+    private var nextPanelButton: some View {
+        Button {
+            let tabs = moduleTabs
+            guard !tabs.isEmpty else { return }
+            let next = tabs.firstIndex(of: appState.fullExpandedSelectedTab)
+                .map { tabs.index(after: $0) % tabs.count } ?? 0
+            appState.selectFullExpandedTab(tabs[next])
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.78))
+                .frame(width: 26, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .hoverPointer()
+        .accessibilityLabel("Next panel")
+        .help("Next panel")
     }
 
     private var settingsButton: some View {
@@ -448,9 +480,7 @@ struct FullExpandedTopBarView: View {
 
     private var visibleTabs: [FullExpandedTab] {
         appState.fullExpandedTabs.filter { tab in
-            if case .module(.builtIn(.notifications)) = tab {
-                return false
-            }
+            if case .module(.builtIn(.notifications)) = tab { return false }
             return true
         }
     }
@@ -458,7 +488,14 @@ struct FullExpandedTopBarView: View {
     private var shoulderModuleViewportWidth: CGFloat {
         let visibleModuleCount: CGFloat = 3
         let contentWidth = (iconTabWidth * visibleModuleCount) + (shoulderTabSpacing * max(0, visibleModuleCount - 1)) + 4
-        return min(leadingScrollableWidth, contentWidth)
+        let nextButtonSpace = showsShoulderNextPanel ? 26 + shoulderTabSpacing : 0
+        return min(max(0, leadingScrollableWidth - nextButtonSpace), contentWidth)
+    }
+
+    private var showsShoulderNextPanel: Bool {
+        let tabWidth = iconTabWidth + shoulderTabSpacing
+        let visibleCount = min(3, Int((leadingScrollableWidth + shoulderTabSpacing) / tabWidth))
+        return moduleTabs.count > visibleCount
     }
 
     private var shoulderAvailableWidth: CGFloat {
@@ -576,6 +613,8 @@ private struct FullExpandedTabButton: View {
         }
         .buttonStyle(.plain)
         .hoverPointer()
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .help(tab.title)
     }
 

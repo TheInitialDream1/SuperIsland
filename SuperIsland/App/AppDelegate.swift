@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let lastFmExtensionID = "superisland.lastfm-scrobbler"
     private static let lastFmOAuthStoreKey = "extensions.\(lastFmExtensionID).store.oauth"
     private var islandWindowController: IslandWindowController?
+    private var clipboardSettingsObserver: AnyCancellable?
+    private var activeExtensionsObserver: AnyCancellable?
     private var onboardingWindowController: OnboardingWindowController?
     private var updateWindowController: UpdateWindowController?
     private var updateCancellable: AnyCancellable?
@@ -45,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Ensure the agents-status Python subprocess exits with us so port 7823
         // is released cleanly and no orphan is inherited by launchd.
         AgentsStatusBridge.shared.stop()
+        ClipboardHistoryStore.shared.updateRecording(false)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -72,6 +75,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observeMenuBarSetting()
         observePowerState()
         initializeManagers()
+        let extensions = ExtensionManager.shared
+        let state = AppState.shared
+        clipboardSettingsObserver = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: RunLoop.main)
+            .map { _ in state.clipboardRecordingEnabled }
+            .removeDuplicates()
+            .sink { _ in extensions.updateClipboardRecording() }
+        activeExtensionsObserver = extensions.$activeNativeUtilityIDs
+            .combineLatest(extensions.$runtimes)
+            .map { nativeIDs, runtimes in nativeIDs.union(runtimes.keys) }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.rebuildStatusMenu() }
     }
 
     private func showOnboardingIfNeeded() {
@@ -338,8 +354,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let extensionItem = NSMenuItem(title: L10n.string(manifest.name), action: #selector(toggleExtension(_:)), keyEquivalent: "")
                 extensionItem.target = self
                 extensionItem.representedObject = manifest.id
-                extensionItem.state = ExtensionManager.shared.runtimes[manifest.id] != nil ? .on : .off
+                extensionItem.state = ExtensionManager.shared.isActive(extensionID: manifest.id) ? .on : .off
                 extensionItem.image = menuIconImage(for: manifest)
+                    ?? NativeUtilityExtension(id: manifest.id).flatMap {
+                        NSImage(systemSymbolName: $0.icon, accessibilityDescription: L10n.string($0.title))
+                    }
                 modulesMenu.addItem(extensionItem)
             }
         }
@@ -439,13 +458,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleExtension(_ sender: NSMenuItem) {
         guard let extensionID = sender.representedObject as? String else { return }
 
-        if ExtensionManager.shared.runtimes[extensionID] != nil {
+        if ExtensionManager.shared.isActive(extensionID: extensionID) {
             ExtensionManager.shared.disableByUser(extensionID: extensionID)
         } else {
             ExtensionManager.shared.activate(extensionID: extensionID)
         }
 
-        sender.state = ExtensionManager.shared.runtimes[extensionID] != nil ? .on : .off
+        sender.state = ExtensionManager.shared.isActive(extensionID: extensionID) ? .on : .off
         rebuildStatusMenu()
     }
 

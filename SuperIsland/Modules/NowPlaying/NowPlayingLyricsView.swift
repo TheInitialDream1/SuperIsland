@@ -10,6 +10,8 @@ struct NowPlayingLyricsView: View {
     @ObservedObject private var player: NowPlayingManager
     @ObservedObject private var spectrum: AudioSpectrumMonitor
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage(IslandSurfaceAppearance.defaultsKey) private var backgroundOpacity = 1.0
     @Environment(\.lyricsUsesIslandBackground) private var usesIslandBackground
     @Environment(\.lyricsSurfaceSideInsets) private var surfaceSideInsets
     @State private var presentationID = UUID()
@@ -88,6 +90,9 @@ struct NowPlayingLyricsView: View {
             .background {
                 if !usesIslandBackground {
                     NativeLyricsBackdropHost(style: nativeStyle)
+                        .compositingGroup()
+                        .opacity(IslandSurfaceAppearance.resolved(
+                            backgroundOpacity, forceOpaque: reduceTransparency || nativeStyle == .monet))
                 }
             }
         }

@@ -21,8 +21,8 @@ enum ActiveModule: Equatable, Hashable {
         switch self {
         case .builtIn(let module):
             return module.iconName
-        case .extension_:
-            return "puzzlepiece.extension"
+        case .extension_(let id):
+            return NativeUtilityExtension(id: id)?.icon ?? "puzzlepiece.extension"
         }
     }
 

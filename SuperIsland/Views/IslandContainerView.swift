@@ -2,6 +2,7 @@ import SwiftUI
 
 struct IslandContainerView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ObservedObject private var player = NowPlayingManager.shared
     @AppStorage("lyrics.nativeVisualStyle") private var nativeLyricStyle = NativeLyricStyle.luminous.rawValue
     @State private var isHoveringIslandSurface = false
@@ -51,22 +52,9 @@ struct IslandContainerView: View {
             trailing: appState.usesOutwardTopCorners
                 ? max(0, appState.currentTopTrailingCornerRadius - contentSideInset) : 0
         )
+        let surfaceSwipeEnabled = appState.islandSurfaceSwipeEnabled && player.seekPreviewTime == nil
         return ZStack(alignment: .top) {
-            if appState.usesArtworkBackground {
-                NativeLyricsBackdropHost(style: .resolve(nativeLyricStyle))
-            } else {
-                islandShape
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.black.opacity(0.98),
-                            Color.black.opacity(0.94)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
+            surfaceBackdrop
 
             islandContent
                 .frame(width: surfaceSize.width, height: surfaceSize.height, alignment: .top)
@@ -95,8 +83,8 @@ struct IslandContainerView: View {
         }
         .contentShape(islandShape)
         .modifier(IslandSurfaceSwipeModifier(
-            enabled: appState.islandSurfaceSwipeEnabled && player.seekPreviewTime == nil,
-            isCompact: appState.currentState == .compact,
+            trackpadEnabled: surfaceSwipeEnabled && appState.currentState != .compact,
+            dragEnabled: surfaceSwipeEnabled && !isEditingSurface,
             onTrackpad: { handleHorizontalSwipe($0) },
             onDragEnded: { handleSwipe(value: $0) }
         ))
@@ -123,6 +111,36 @@ struct IslandContainerView: View {
             }
         }
         .animation(islandSurfaceAnimation, value: appState.activeModule)
+    }
+
+    private var isEditingSurface: Bool {
+        guard appState.currentState == .fullExpanded,
+              case .module(.extension_(let id)) = appState.fullExpandedSelectedTab else { return false }
+        switch NativeUtilityExtension(id: id) {
+        case .clipboard, .note, .tasks, .countdown, .quote, .system: return true
+        default: return false
+        }
+    }
+
+    private var surfaceBackdrop: some View {
+        let style = appState.usesArtworkBackground ? NativeLyricStyle.resolve(nativeLyricStyle) : nil
+        let attachedToNotch = appState.currentState == .compact && appState.presentationHasNotch
+        let opacity = IslandSurfaceAppearance.resolved(
+            appState.backgroundOpacity,
+            forceOpaque: reduceTransparency || attachedToNotch || style == .monet
+        )
+        return Group {
+            if let style {
+                NativeLyricsBackdropHost(style: style)
+            } else {
+                LinearGradient(colors: [Color(white: 0.02), Color(white: 0.06)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .compositingGroup()
+        .opacity(opacity)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Content
@@ -437,24 +455,24 @@ struct IslandContainerView: View {
 }
 
 private struct IslandSurfaceSwipeModifier: ViewModifier {
-    let enabled: Bool
-    let isCompact: Bool
+    let trackpadEnabled: Bool
+    let dragEnabled: Bool
     let onTrackpad: (SwipeDirection) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
     func body(content: Content) -> some View {
         content
-                .onTrackpadSwipe { direction in
-                    guard enabled, !isCompact else { return }
-                    onTrackpad(direction)
-                }
-                .gesture(
-                    DragGesture(minimumDistance: 8)
-                        .onEnded { value in
-                            guard enabled else { return }
-                            onDragEnded(value)
-                        },
-                    including: enabled ? .all : .subviews
-                )
+            .onTrackpadSwipe { direction in
+                guard trackpadEnabled else { return }
+                onTrackpad(direction)
+            }
+            .gesture(
+                DragGesture(minimumDistance: 8)
+                    .onEnded { value in
+                        guard dragEnabled else { return }
+                        onDragEnded(value)
+                    },
+                including: dragEnabled ? .all : .subviews
+            )
     }
 }

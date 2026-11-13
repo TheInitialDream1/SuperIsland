@@ -114,6 +114,32 @@ struct ExtensionManifest: Codable, Identifiable, Hashable {
         case defaultEnabled
     }
 
+    init(nativeUtility utility: NativeUtilityExtension) {
+        id = utility.id
+        name = utility.title
+        version = "1.0.0"
+        minAppVersion = "1.0.10"
+        main = ""
+        author = nil
+        description = utility.description
+        icon = nil
+        license = nil
+        categories = ["utilities"]
+        permissions = []
+        var nativeCapabilities = Capabilities()
+        nativeCapabilities.compact = false
+        nativeCapabilities.expanded = false
+        nativeCapabilities.backgroundRefresh = false
+        nativeCapabilities.settings = utility == .clipboard
+        capabilities = nativeCapabilities
+        layout = Layout(fullExpandedHeight: utility.panelHeight)
+        refreshInterval = 0
+        activationTriggers = ["manual"]
+        defaultEnabled = false
+        bundleURL = Bundle.main.bundleURL
+        settingsURL = nil
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 

@@ -56,6 +56,10 @@ struct ExtensionsSettingsView: View {
         }
     }
 
+    private func isActive(_ manifest: ExtensionManifest) -> Bool {
+        manager.isActive(extensionID: manifest.id)
+    }
+
     private var filterBar: some View {
         HStack(spacing: 10) {
             Text("Filter")
@@ -157,18 +161,12 @@ struct ExtensionsSettingsView: View {
                         }
                     }
 
-                    SettingsCard(title: "Details") {
-                        if let author = manifest.author?.name {
-                            metadataRow(label: "Author", value: author)
-                        }
-                        if manifest.id != linearMentionsExtensionID {
-                            metadataRow(label: "Refresh", value: "\(String(format: "%.1f", manifest.refreshInterval))s")
-                        }
-                        metadataRow(label: "Triggers", value: manifest.activationTriggers.joined(separator: ", "))
+                    if manifest.id == NativeUtilityExtension.clipboard.id {
+                        SettingsCard(title: "Settings") { ClipboardSettingsView() }
+                    }
 
-                        if !manifest.permissions.isEmpty {
-                            metadataRow(label: "Permissions", value: manifest.permissions.joined(separator: ", "))
-                        }
+                    if NativeUtilityExtension(id: manifest.id) == nil {
+                        extensionDetails(for: manifest)
                     }
 
                     if let schema = manager.settingsSchemas[manifest.id] {
@@ -180,21 +178,7 @@ struct ExtensionsSettingsView: View {
                     let logEntries = logger.entries(for: manifest.id)
                     if !logEntries.isEmpty {
                         SettingsCard(title: "Recent Logs") {
-                            VStack(alignment: .leading, spacing: 7) {
-                                ForEach(logEntries.suffix(8)) { entry in
-                                    HStack(alignment: .top, spacing: 8) {
-                                        Text(entry.timestamp.formatted(date: .omitted, time: .standard))
-                                            .font(.system(size: 10, design: .monospaced))
-                                            .foregroundColor(.secondary)
-                                            .frame(width: 72, alignment: .leading)
-
-                                        Text("[\(entry.level.rawValue.uppercased())] \(entry.message)")
-                                            .font(.system(size: 11, design: .monospaced))
-                                            .foregroundColor(entry.level == .error ? .red : .secondary)
-                                            .textSelection(.enabled)
-                                    }
-                                }
-                            }
+                            extensionLogs(logEntries)
                         }
                     }
                 }
@@ -216,6 +200,40 @@ struct ExtensionsSettingsView: View {
         }
     }
 
+    private func extensionDetails(for manifest: ExtensionManifest) -> some View {
+        SettingsCard(title: "Details") {
+            if let author = manifest.author?.name {
+                metadataRow(label: "Author", value: author)
+            }
+            if manifest.id != linearMentionsExtensionID {
+                metadataRow(label: "Refresh", value: "\(String(format: "%.1f", manifest.refreshInterval))s")
+            }
+            metadataRow(label: "Triggers", value: manifest.activationTriggers.joined(separator: ", "))
+
+            if !manifest.permissions.isEmpty {
+                metadataRow(label: "Permissions", value: manifest.permissions.joined(separator: ", "))
+            }
+        }
+    }
+
+    private func extensionLogs(_ entries: [ExtensionLogger.Entry]) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            ForEach(entries.suffix(8)) { entry in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(entry.timestamp.formatted(date: .omitted, time: .standard))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .frame(width: 72, alignment: .leading)
+
+                    Text("[\(entry.level.rawValue.uppercased())] \(entry.message)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(entry.level == .error ? .red : .secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
     private func extensionHeaderCard(for manifest: ExtensionManifest) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
@@ -233,15 +251,15 @@ struct ExtensionsSettingsView: View {
 
                 Spacer()
 
-                Text(L10n.string(manager.runtimes[manifest.id] == nil ? "Inactive" : "Active"))
+                Text(L10n.string(!isActive(manifest) ? "Inactive" : "Active"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(
                         Capsule()
-                            .fill(manager.runtimes[manifest.id] == nil ? Color.secondary.opacity(0.15) : Color.green.opacity(0.15))
+                            .fill(!isActive(manifest) ? Color.secondary.opacity(0.15) : Color.green.opacity(0.15))
                     )
-                    .foregroundColor(manager.runtimes[manifest.id] == nil ? .secondary : .green)
+                    .foregroundColor(!isActive(manifest) ? .secondary : .green)
             }
 
             Text(L10n.string(manifest.description))
@@ -249,16 +267,26 @@ struct ExtensionsSettingsView: View {
                 .foregroundColor(.secondary)
 
             HStack(spacing: 10) {
-                Button(L10n.string(manager.runtimes[manifest.id] == nil ? "Activate" : "Reload")) {
-                    if manager.runtimes[manifest.id] == nil {
-                        manager.activate(extensionID: manifest.id)
+                if let utility = NativeUtilityExtension(id: manifest.id) {
+                    if isActive(manifest) {
+                        Button("Open in Island") { AppState.shared.openUtilityModule(utility) }
+                            .buttonStyle(.borderedProminent)
                     } else {
-                        manager.reload(extensionID: manifest.id)
+                        Button("Activate") { manager.activate(extensionID: manifest.id) }
+                            .buttonStyle(.borderedProminent)
                     }
+                } else {
+                    Button(L10n.string(isActive(manifest) ? "Reload" : "Activate")) {
+                        if isActive(manifest) {
+                            manager.reload(extensionID: manifest.id)
+                        } else {
+                            manager.activate(extensionID: manifest.id)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
 
-                if manager.runtimes[manifest.id] != nil {
+                if isActive(manifest) {
                     Button("Deactivate") {
                         manager.disableByUser(extensionID: manifest.id)
                     }
@@ -292,7 +320,7 @@ struct ExtensionsSettingsView: View {
             Spacer(minLength: 6)
 
             Circle()
-                .fill(manager.runtimes[manifest.id] == nil ? Color.secondary.opacity(isSelected ? 0.75 : 0.45) : Color.green)
+                .fill(!isActive(manifest) ? Color.secondary.opacity(isSelected ? 0.75 : 0.45) : Color.green)
                 .frame(width: 7, height: 7)
         }
         .padding(.horizontal, 10)
@@ -343,7 +371,7 @@ struct ExtensionsSettingsView: View {
                         .stroke(Color.secondary.opacity(0.24), lineWidth: 0.6)
                 )
         } else {
-            Image(systemName: "puzzlepiece.extension")
+            Image(systemName: NativeUtilityExtension(id: manifest.id)?.icon ?? "puzzlepiece.extension")
                 .font(.system(size: size * 0.52, weight: .semibold))
                 .foregroundColor(.accentColor)
                 .frame(width: size, height: size)
@@ -398,7 +426,7 @@ struct ExtensionsSettingsView: View {
     }
 
     private var activeExtensionIDs: [String] {
-        manager.runtimes.keys.sorted()
+        manager.activeExtensionIDs.sorted()
     }
 
     private func extensionSource(for manifest: ExtensionManifest) -> (label: String, color: Color) {

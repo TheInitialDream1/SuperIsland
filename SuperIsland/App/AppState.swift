@@ -259,6 +259,7 @@ final class AppState: ObservableObject {
     @AppStorage("module.volumeHUD.enabled") var volumeHUDEnabled = true
     @AppStorage("module.battery.enabled") var batteryEnabled = true
     @AppStorage("module.shelf.enabled") var shelfEnabled = true
+    @AppStorage(ClipboardHistoryStore.enabledKey) var clipboardRecordingEnabled = false
     @AppStorage("module.connectivity.enabled") var connectivityEnabled = true
     @AppStorage("module.calendar.enabled") var calendarEnabled = true
     @AppStorage("module.weather.enabled") var weatherEnabled = true
@@ -275,6 +276,7 @@ final class AppState: ObservableObject {
     @AppStorage("module.shelf.airDropEnabled") var shelfAirDropEnabled = false
 
     // Appearance settings
+    @AppStorage(IslandSurfaceAppearance.defaultsKey) var backgroundOpacity = 1.0
     @AppStorage("appearance.animationSpeed") var animationSpeed: Double = 1.0
     @AppStorage("appearance.bounceAmount") var bounceAmount: Double = 0.25
     @AppStorage("appearance.animationLevel") var animationLevelRaw = AnimationLevel.full.rawValue
@@ -316,6 +318,7 @@ final class AppState: ObservableObject {
 
     private var autoDismissWorkItem: DispatchWorkItem?
     private var fullExpandedDismissWorkItem: DispatchWorkItem?
+    private var utilityPointerEntryDeadline: Date?
     private var hoverActivationWorkItem: DispatchWorkItem?
     private var systemEmojiInteractionWorkItem: DispatchWorkItem?
     private var systemEmojiInteractionExpiry: Date?
@@ -536,6 +539,7 @@ final class AppState: ObservableObject {
         cancelAutoDismiss()
         cancelFullExpandedDismiss()
         cancelHoverActivation()
+        utilityPointerEntryDeadline = nil
         endSystemEmojiInteraction()
         withAnimation(notchAnimation) {
             currentState = .compact
@@ -585,6 +589,7 @@ final class AppState: ObservableObject {
         }
 
         if hovering {
+            utilityPointerEntryDeadline = nil
             if !wasHovering {
                 performNotchEntryHapticIfNeeded()
             }
@@ -622,6 +627,27 @@ final class AppState: ObservableObject {
     }
 
     // MARK: - HUD Management
+
+    func openUtilityModule(_ utility: NativeUtilityExtension) {
+        let module = utility.module
+        guard canPresentFullExpandedModule(module) else { return }
+        // The pointer can still be over the menu bar or Settings when opening.
+        utilityPointerEntryDeadline = isHovering ? nil : Date().addingTimeInterval(6)
+        cancelAutoDismiss()
+        cancelFullExpandedDismiss()
+        setActiveModule(module)
+        if currentState != .fullExpanded { fullyExpand() }
+        selectFullExpandedTab(.module(module))
+        if !isHovering && !suppressDismissScheduling { scheduleFullExpandedDismiss() }
+    }
+
+    func removeUtilitySelection(_ module: ActiveModule) {
+        withAnimation(contentSwapAnimation) {
+            if activeModule == module { activeModule = nil }
+            if previousModule == module { previousModule = nil }
+            if fullExpandedSelectedTab == .module(module) { showHomeTab() }
+        }
+    }
 
     func showHUD(module: ModuleType, autoDismiss: Bool = true, autoDismissDelay: TimeInterval? = nil) {
         showHUD(module: .builtIn(module), autoDismiss: autoDismiss, autoDismissDelay: autoDismissDelay)
@@ -688,7 +714,8 @@ final class AppState: ObservableObject {
             self.dismiss()
         }
         fullExpandedDismissWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+        let pointerEntryTime = utilityPointerEntryDeadline?.timeIntervalSinceNow ?? 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(delay, pointerEntryTime), execute: workItem)
     }
 
     func cancelFullExpandedDismiss() {
@@ -854,6 +881,10 @@ final class AppState: ObservableObject {
 
     private func handleStateTransition(from oldValue: IslandState, to newValue: IslandState) {
         guard oldValue != newValue else { return }
+        if newValue == .compact, case .extension_(let id) = activeModule,
+           NativeUtilityExtension(id: id) != nil {
+            activeModule = nil
+        }
 
         switch newValue {
         case .expanded:
@@ -976,7 +1007,10 @@ final class AppState: ObservableObject {
         let builtIns = ModuleType.allCases
             .filter { isCyclableIslandModule($0) && isModuleEnabled($0) }
             .map(ActiveModule.builtIn)
-        return builtIns + ExtensionManager.shared.availableModules
+        return builtIns + ExtensionManager.shared.availableModules.filter { module in
+            guard case .extension_(let id) = module else { return true }
+            return NativeUtilityExtension(id: id) == nil
+        }
     }
 
     var fullExpandedModules: [ActiveModule] {
@@ -987,9 +1021,7 @@ final class AppState: ObservableObject {
     }
 
     var fullExpandedTabs: [FullExpandedTab] {
-        var tabs: [FullExpandedTab] = [.home]
-        tabs.append(contentsOf: fullExpandedModules.map(FullExpandedTab.module))
-        return tabs
+        [.home] + fullExpandedModules.map(FullExpandedTab.module)
     }
 
     var hasFullExpandedShoulderBarSpace: Bool {
@@ -1505,7 +1537,9 @@ final class AppState: ObservableObject {
     func canPresentFullExpandedModule(_ module: ActiveModule) -> Bool {
         switch module {
         case .extension_(let extensionID):
-            return ExtensionManager.shared.installed.first(where: { $0.id == extensionID })?.capabilities.fullExpanded ?? false
+            let manager = ExtensionManager.shared
+            return manager.isActive(extensionID: extensionID)
+                && manager.installed.first(where: { $0.id == extensionID })?.capabilities.fullExpanded == true
         case .builtIn(.battery), .builtIn(.shelf):
             return true
         default:
