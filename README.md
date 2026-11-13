@@ -38,15 +38,15 @@ SuperIsland 是一个 macOS 菜单栏应用：在刘海附近或普通显示器�
 
 ## 下载安装
 
-**[下载 SuperIsland 1.0.10 · Build 29 · Apple Silicon DMG](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.29/SuperIsland-1.0.10-build29-arm64.dmg)**
+**[下载 SuperIsland 1.0.10 · Build 36 · Apple Silicon DMG](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.36/SuperIsland-1.0.10-build36-arm64.dmg)**
 
-- 适用于 **Apple 芯片 Mac，macOS 14 或更新版本**，安装包约 38 MB。
+- 适用于 **Apple 芯片 Mac，macOS 14 或更新版本**，安装包约 41 MB。
 - 打开 DMG，将 `SuperIsland.app` 拖入 `Applications`。更新安装前请退出旧版本。
 - 当前为 **ad-hoc 本机签名的开发构建，尚未经过 Apple 公证**，首次运行可能被 macOS 拦截。请确认下载自本仓库；系统提示相关说明见 [Apple 支持](https://support.apple.com/zh-cn/102445)。
-- 安装包包含 15 种原生歌词场景、同步歌词扩展 0.11.0、MediaRemote Adapter、Node 运行时及 10 个扩展。外部服务仍需自行配置账号或本机桥接。
+- 安装包包含 15 种原生歌词场景、同步歌词扩展 0.11.1、MediaRemote Adapter、Node 运行时及 10 个扩展。外部服务仍需自行配置账号或本机桥接。
 - 应用更新检查指向本仓库的 Releases；当前不提供 Intel 安装包。
 
-[版本说明、安装包与 SHA-256 校验文件](https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.29) · [完整打包校验记录](docs/releases/build29.json)
+[版本说明、安装包与 SHA-256 校验文件](https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.36) · [完整打包校验记录](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.36/SuperIsland-1.0.10-build36-arm64.verification.json)
 
 ## 播放器样式
 
