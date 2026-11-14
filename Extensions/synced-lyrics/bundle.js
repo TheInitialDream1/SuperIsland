@@ -25,9 +25,9 @@
     mod
   ));
 
-  // lyrics-island/vendor/opencc-t2cn.js
+  // Extensions/synced-lyrics/vendor/opencc-t2cn.js
   var require_opencc_t2cn = __commonJS({
-    "lyrics-island/vendor/opencc-t2cn.js"(exports, module) {
+    "Extensions/synced-lyrics/vendor/opencc-t2cn.js"(exports, module) {
       !(function(n, e) {
         "object" == typeof exports && "undefined" != typeof module ? e(exports) : "function" == typeof define && define.amd ? define(["exports"], e) : e((n = "undefined" != typeof globalThis ? globalThis : n || self).OpenCC = {});
       })(exports, function(n) {
@@ -218,9 +218,9 @@
     }
   });
 
-  // lyrics-island/vendor/pako-inflate.min.js
+  // Extensions/synced-lyrics/vendor/pako-inflate.min.js
   var require_pako_inflate_min = __commonJS({
-    "lyrics-island/vendor/pako-inflate.min.js"(exports, module) {
+    "Extensions/synced-lyrics/vendor/pako-inflate.min.js"(exports, module) {
       !(function(e, t) {
         "object" == typeof exports && "undefined" != typeof module ? t(exports) : "function" == typeof define && define.amd ? define(["exports"], t) : t((e = "undefined" != typeof globalThis ? globalThis : e || self).pako = {});
       })(exports, (function(e) {
@@ -921,9 +921,9 @@
     }
   });
 
-  // lyrics-island/index.js
+  // Extensions/synced-lyrics/index.js
   var require_index = __commonJS({
-    "lyrics-island/index.js"(exports, module) {
+    "Extensions/synced-lyrics/index.js"(exports, module) {
       "use strict";
       var KUGOU_LYRICS_ROOT = "https://lyrics.kugou.com";
       var POLL_INTERVAL_MS = 1e3;
@@ -1470,11 +1470,17 @@
         }
         return output;
       }
+      function qqSongTitle(song) {
+        return trimString(song.title) || trimString(song.name);
+      }
+      function qqSongArtists(song) {
+        return (Array.isArray(song.singer) ? song.singer : []).map(function(item) {
+          return trimString(item && item.name);
+        }).filter(Boolean);
+      }
       function scoreQQCandidate(song, metadata) {
-        if (!song || !trimString(song.mid) || normalizedText(song.name || song.title) !== normalizedText(metadata.title)) return -Infinity;
-        var artists = (Array.isArray(song.singer) ? song.singer : []).map(function(item) {
-          return trimString(item.name);
-        });
+        if (!song || !trimString(song.mid) || normalizedText(qqSongTitle(song)) !== normalizedText(metadata.title)) return -Infinity;
+        var artists = qqSongArtists(song);
         var artist = normalizedText(artists.join(" "));
         var wantedArtist = normalizedText(metadata.artist);
         if (wantedArtist && (!artist || artist !== wantedArtist && artist.indexOf(wantedArtist) < 0)) return -Infinity;
@@ -1524,8 +1530,9 @@
         });
         var section = search.data && search.data.req_1;
         var body = section && section.data && section.data.body;
-        if (!section || section.code !== 0 || !body) return null;
+        if (!section || section.code !== 0 || !body) return { error: "QQ \u97F3\u4E50\u641C\u7D22\u5931\u8D25" };
         var songs = rankedQQCandidates(body.item_song || body.song && body.song.list, metadata).slice(0, 3);
+        if (!songs.length) return { error: "QQ \u97F3\u4E50\u672A\u5339\u914D\u5230\u5F53\u524D\u6B4C\u66F2\u7248\u672C" };
         for (var i = 0; i < songs.length; i += 1) {
           var song = songs[i];
           var qrc = "", lrc = "";
@@ -1580,10 +1587,8 @@
           }
           if (!parseLrc(lrc).length) continue;
           return { payload: {
-            trackName: trimString(song.name || song.title),
-            artistName: song.singer.map(function(item) {
-              return trimString(item.name);
-            }).join(" / "),
+            trackName: qqSongTitle(song),
+            artistName: qqSongArtists(song).join(" / "),
             albumName: trimString(song.album && (song.album.name || song.album.title)),
             duration: toNumber(song.interval, 0),
             instrumental: false,
@@ -1593,7 +1598,7 @@
             wordSyncedLyrics: qrc
           }, metadata, source: "qqmusic" };
         }
-        return null;
+        return { error: "QQ \u97F3\u4E50\u672A\u8FD4\u56DE\u53EF\u7528\u7684\u540C\u6B65\u6B4C\u8BCD" };
       }
       function timelinesAgree(left, right) {
         var byText = {};
@@ -1635,9 +1640,14 @@
         }
         if (trimString(snapshot.bundleIdentifier).indexOf("com.tencent.QQMusic") === 0) {
           var qq = await lookupQQLyrics(metadata);
-          if (qq) return qq;
-          logWarning("QQ \u97F3\u4E50\u6B4C\u8BCD\u4E0D\u53EF\u7528\uFF0C\u5C1D\u8BD5\u5907\u7528\u6B4C\u8BCD\u6E90");
+          if (qq.payload) return qq;
+          logWarning(qq.error + "\uFF0C\u5C1D\u8BD5\u5907\u7528\u6B4C\u8BCD\u6E90");
+          var fallback = await lookupKugouLyrics(metadata);
+          return fallback.payload ? fallback : { error: qq.error + "\uFF1B" + fallback.error };
         }
+        return lookupKugouLyrics(metadata);
+      }
+      async function lookupKugouLyrics(metadata) {
         var keyword = [metadata.artist, metadata.title].filter(Boolean).join(" - ");
         var searchPairs = [
           encodedPair("ver", 1),
@@ -1697,6 +1707,7 @@
           instrumental: !!payload.instrumental,
           plainLyrics: asString(payload.plainLyrics),
           syncedLyrics: asString(payload.syncedLyrics),
+          wordSyncedLyrics: asString(payload.wordSyncedLyrics),
           lyricSource: trimString(payload.lyricSource),
           cachedAtEpochMs: Date.now()
         };
@@ -2119,10 +2130,10 @@
     }
   });
 
-  // lyrics-island/bundle-entry.js
+  // Extensions/synced-lyrics/bundle-entry.js
   var import_opencc_t2cn = __toESM(require_opencc_t2cn());
 
-  // lyrics-island/vendor/qrc-codec.mjs
+  // Extensions/synced-lyrics/vendor/qrc-codec.mjs
   var import_pako_inflate_min = __toESM(require_pako_inflate_min(), 1);
   var KEY_1 = new Uint8Array([33, 64, 35, 41, 40, 42, 36, 37]);
   var KEY_2 = new Uint8Array([49, 50, 51, 90, 88, 67, 33, 64]);
@@ -3234,7 +3245,7 @@
     return decompressedBytes;
   }
 
-  // lyrics-island/bundle-entry.js
+  // Extensions/synced-lyrics/bundle-entry.js
   var import_index = __toESM(require_index());
   globalThis.OpenCC = import_opencc_t2cn.default && import_opencc_t2cn.default.Converter ? import_opencc_t2cn.default : import_opencc_t2cn.default.default || import_opencc_t2cn.default;
   globalThis.__superIslandDecodeQRC = decryptQrc;

@@ -52,6 +52,31 @@ async function main() {
   assert.equal(lyrics.parseLrc(result.payload.syncedLyrics)[0].time, 232.73);
   assert.equal(requests.length, 2, "do not mix in another platform's lyric when QQ succeeds");
 
+  const edition = { title: "慌啥子嘛 (赵本山版)", artist: "赵本山", album: "慌啥子嘛（赵本山版）",
+    durationSeconds: 189, bundleIdentifier: "com.tencent.QQMusicMac" };
+  const vocal = { mid: "vocal", name: "慌啥子嘛", title: edition.title, singer: [{ name: edition.artist }],
+    album: { name: edition.album }, interval: 189 };
+  const accompaniment = { ...vocal, mid: "instrumental", title: "慌啥子嘛 (赵本山版伴奏)" };
+  const cover = { ...vocal, mid: "cover", singer: [{ name: "其他歌手" }] };
+  const sameName = { ...vocal, mid: "different-edition", title: "慌啥子嘛" };
+  handler = async url => {
+    if (url.includes("musicu.fcg")) {
+      return response({ req_1: { code: 0, data: { body: { item_song: [accompaniment, cover, sameName, vocal] } } } });
+    }
+    assert.equal(new URL(url).searchParams.get("songmid"), "vocal");
+    return response({ code: 0, lyric: encoded("[00:10.00]test vocal timeline") });
+  };
+  const editionResult = await lyrics.lookupLyricsPayload(edition);
+  assert.equal(editionResult.source, "qqmusic");
+  assert.equal(editionResult.payload.trackName, edition.title);
+  assert.equal(lyrics.payloadMatchesSnapshot(editionResult.payload, edition), true);
+
+  handler = async url => url.includes("musicu.fcg")
+    ? response({ req_1: { code: 0, data: { body: { item_song: [accompaniment, cover, sameName] } } } })
+    : response({ candidates: [] });
+  const missingEdition = await lyrics.lookupLyricsPayload(edition);
+  assert.equal(missingEdition.error, "QQ 音乐未匹配到当前歌曲版本；酷狗没有找到匹配的歌词");
+
   const timeline = offset => Array.from({ length: 10 }, (_, i) => ({ time: 20 + i * 10 + offset, text: "测试歌曲句子" + i }));
   const docs = [{ lines: timeline(8), result: "outlier" }, { lines: timeline(0), result: "correct" },
     { lines: timeline(0.1), result: "agrees" }, { lines: timeline(0), result: "agrees again" }];

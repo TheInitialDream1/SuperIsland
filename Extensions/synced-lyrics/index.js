@@ -565,9 +565,21 @@ function decodeBase64Utf8(value) {
   return output;
 }
 
+function qqSongTitle(song) {
+  // QQ's display title includes the recording suffix. Its short name can be
+  // identical for the vocal, accompaniment, and other versions.
+  return trimString(song.title) || trimString(song.name);
+}
+
+function qqSongArtists(song) {
+  return (Array.isArray(song.singer) ? song.singer : []).map(function(item) {
+    return trimString(item && item.name);
+  }).filter(Boolean);
+}
+
 function scoreQQCandidate(song, metadata) {
-  if (!song || !trimString(song.mid) || normalizedText(song.name || song.title) !== normalizedText(metadata.title)) return -Infinity;
-  var artists = (Array.isArray(song.singer) ? song.singer : []).map(function(item) { return trimString(item.name); });
+  if (!song || !trimString(song.mid) || normalizedText(qqSongTitle(song)) !== normalizedText(metadata.title)) return -Infinity;
+  var artists = qqSongArtists(song);
   var artist = normalizedText(artists.join(" "));
   var wantedArtist = normalizedText(metadata.artist);
   if (wantedArtist && (!artist || (artist !== wantedArtist && artist.indexOf(wantedArtist) < 0))) return -Infinity;
@@ -603,8 +615,9 @@ async function lookupQQLyrics(metadata) {
   });
   var section = search.data && search.data.req_1;
   var body = section && section.data && section.data.body;
-  if (!section || section.code !== 0 || !body) return null;
+  if (!section || section.code !== 0 || !body) return { error: "QQ 音乐搜索失败" };
   var songs = rankedQQCandidates(body.item_song || (body.song && body.song.list), metadata).slice(0, 3);
+  if (!songs.length) return { error: "QQ 音乐未匹配到当前歌曲版本" };
   for (var i = 0; i < songs.length; i += 1) {
     var song = songs[i];
     var qrc = "", lrc = "";
@@ -630,24 +643,24 @@ async function lookupQQLyrics(metadata) {
       } catch (error) { logWarning("逐字歌词暂不可用，继续读取逐行歌词"); }
     }
     if (!lrc) {
-    var download = await requestJSON("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?" + [
-      encodedPair("songmid", song.mid), encodedPair("format", "jsonp"),
-      encodedPair("callback", "MusicJsonCallback_lrc"), encodedPair("platform", "yqq"), encodedPair("needNewCode", 0)
-    ].join("&"), { headers: headers });
-    var data = asObject(download.data) || {};
-    if (data.code !== 0) continue;
-    lrc = decodeBase64Utf8(data.lyric);
+      var download = await requestJSON("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?" + [
+        encodedPair("songmid", song.mid), encodedPair("format", "jsonp"),
+        encodedPair("callback", "MusicJsonCallback_lrc"), encodedPair("platform", "yqq"), encodedPair("needNewCode", 0)
+      ].join("&"), { headers: headers });
+      var data = asObject(download.data) || {};
+      if (data.code !== 0) continue;
+      lrc = decodeBase64Utf8(data.lyric);
     }
     if (!parseLrc(lrc).length) continue;
     return { payload: {
-      trackName: trimString(song.name || song.title),
-      artistName: song.singer.map(function(item) { return trimString(item.name); }).join(" / "),
+      trackName: qqSongTitle(song),
+      artistName: qqSongArtists(song).join(" / "),
       albumName: trimString(song.album && (song.album.name || song.album.title)),
       duration: toNumber(song.interval, 0), instrumental: false, plainLyrics: "", syncedLyrics: lrc,
       lyricSource: "qqmusic", wordSyncedLyrics: qrc
     }, metadata: metadata, source: "qqmusic" };
   }
-  return null;
+  return { error: "QQ 音乐未返回可用的同步歌词" };
 }
 
 function timelinesAgree(left, right) {
@@ -692,10 +705,15 @@ async function lookupLyricsPayload(snapshot) {
 
   if (trimString(snapshot.bundleIdentifier).indexOf("com.tencent.QQMusic") === 0) {
     var qq = await lookupQQLyrics(metadata);
-    if (qq) return qq;
-    logWarning("QQ 音乐歌词不可用，尝试备用歌词源");
+    if (qq.payload) return qq;
+    logWarning(qq.error + "，尝试备用歌词源");
+    var fallback = await lookupKugouLyrics(metadata);
+    return fallback.payload ? fallback : { error: qq.error + "；" + fallback.error };
   }
+  return lookupKugouLyrics(metadata);
+}
 
+async function lookupKugouLyrics(metadata) {
   var keyword = [metadata.artist, metadata.title].filter(Boolean).join(" - ");
   var searchPairs = [
     encodedPair("ver", 1),
@@ -762,6 +780,7 @@ function cachePayload(key, payload) {
     instrumental: !!payload.instrumental,
     plainLyrics: asString(payload.plainLyrics),
     syncedLyrics: asString(payload.syncedLyrics),
+    wordSyncedLyrics: asString(payload.wordSyncedLyrics),
     lyricSource: trimString(payload.lyricSource),
     cachedAtEpochMs: Date.now()
   };

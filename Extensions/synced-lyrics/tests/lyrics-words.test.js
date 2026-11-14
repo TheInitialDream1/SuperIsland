@@ -53,6 +53,8 @@ async function main() {
   assert.equal(calls.length, 2, "do not download redundant LRC when QRC succeeds");
   api.applyLyricsPayload(result.payload, "word-test", "qqmusic");
   assert.deepEqual(api.state.syncedLines[0].words, lines[0].words);
+  api.applyLyricsPayload(api.state.cache["word-test"], "word-test", "cache");
+  assert.deepEqual(api.state.syncedLines[0].words, lines[0].words, "cached QQ lyrics retain word timing");
 
   request = async (url, options) => {
     if (!options.body) return response({ code: 0, lyric: Buffer.from("[00:10.00]fallback line").toString("base64") });
