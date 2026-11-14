@@ -24,7 +24,7 @@
 
 SuperIsland 是一个 macOS 菜单栏应用：在刘海附近或普通显示器顶部，以紧凑、展开、完整展开三种状态呈现正在播放的音乐、系统状态和常用工具。鼠标移入、点击、手势和模块切换让信息随时可见；固定显示器设置适合多屏工作。
 
-本仓库基于 [shobhit99/SuperIsland](https://github.com/shobhit99/SuperIsland) 的 `5619541` 版本开发，保留上游历史。中文增强版重点加入原生歌词场景、QQ 音乐逐字歌词、播放进度与拖动修正、中文界面、扩展自定义高度以及京东／美团／菜鸟订单组件。当前定制宿主版本为 `1.0.10`、构建号 `36`，歌词扩展版本为 `0.11.1`。
+本仓库基于 [shobhit99/SuperIsland](https://github.com/shobhit99/SuperIsland) 的 `5619541` 版本开发，保留上游历史。中文增强版重点加入原生歌词场景、QQ 音乐逐字歌词、播放进度与拖动修正、中文界面、扩展自定义高度以及京东／美团／菜鸟订单组件。当前定制宿主版本为 `1.0.10`、构建号 `37`，歌词扩展版本为 `0.11.2`。
 
 ### 这一版的重点
 
@@ -38,15 +38,15 @@ SuperIsland 是一个 macOS 菜单栏应用：在刘海附近或普通显示器�
 
 ## 下载安装
 
-**[下载 SuperIsland 1.0.10 · Build 36 · Apple Silicon DMG](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.36/SuperIsland-1.0.10-build36-arm64.dmg)**
+**[下载 SuperIsland 1.0.10 · Build 37 · Apple Silicon DMG](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.37/SuperIsland-1.0.10-build37-arm64.dmg)**
 
-- 适用于 **Apple 芯片 Mac，macOS 14 或更新版本**，安装包约 41 MB。
+- 适用于 **Apple 芯片 Mac，macOS 14 或更新版本**，安装包约 39 MB。
 - 打开 DMG，将 `SuperIsland.app` 拖入 `Applications`。更新安装前请退出旧版本。
 - 当前为 **ad-hoc 本机签名的开发构建，尚未经过 Apple 公证**，首次运行可能被 macOS 拦截。请确认下载自本仓库；系统提示相关说明见 [Apple 支持](https://support.apple.com/zh-cn/102445)。
-- 安装包包含 15 种原生歌词场景、同步歌词扩展 0.11.1、MediaRemote Adapter、Node 运行时及 10 个扩展。外部服务仍需自行配置账号或本机桥接。
+- 安装包包含 15 种原生歌词场景、同步歌词扩展 0.11.2、MediaRemote Adapter、Node 运行时及 10 个扩展。外部服务仍需自行配置账号或本机桥接。
 - 应用更新检查指向本仓库的 Releases；当前不提供 Intel 安装包。
 
-[版本说明、安装包与 SHA-256 校验文件](https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.36) · [完整打包校验记录](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.36/SuperIsland-1.0.10-build36-arm64.verification.json)
+[版本说明、安装包与 SHA-256 校验文件](https://github.com/TheInitialDream1/SuperIsland/releases/tag/v1.0.10-custom.37) · [完整打包校验记录](https://github.com/TheInitialDream1/SuperIsland/releases/download/v1.0.10-custom.37/SuperIsland-1.0.10-build37-arm64.verification.json)
 
 ## 播放器样式
 
